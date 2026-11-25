@@ -14,7 +14,7 @@ Read docs/ARCHITECTURE.md first; everything there still holds unless changed her
 Each client is authoritative for **its own world**: its character, every object whose `world` equals its role, and the enemies in its world. Crates (world 0) are owned by the brother's client; the sister's client only mirrors their x,y for the shadow.
 Messages (plain JSON objects, `TW.net.send(msg)`):
 - `{t:'start', chapter, seed}` host → guest: both start the chapter with the same seed.
-- `{t:'st', x, y, vx, face, onGround, dying, crates:[[id,x,y,respawn]]}` own character state, ~10 Hz.
+- `{t:'st', x, y, vx, face, onGround, dying, crates:[[id,x,y,respawn]]}` own character state, ~5 Hz (saves Supabase quota; the receiver interpolates).
 - `{t:'trig', id}` an object in my world (lever, solved puzzle) turned on target `id` in the other world.
 - `{t:'held', id, v}` a plate in my world is held/released for target `id` in the other world.
 - `{t:'call', x, y}` I called ◎ → receiver adds an echo noise (r 260) and a faint ripple at x.
