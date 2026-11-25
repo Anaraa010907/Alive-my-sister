@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Хоёр ертөнц</title>
+<link rel="icon" href="data:,">
 <style>
 /* VOICE: hushed, wordless, Limbo-like grief and hope
    IDEA: a split photographic plate: a print above, its negative below
@@ -24,6 +25,9 @@ canvas{position:fixed;left:0;top:0;display:block}
 #bSwitch.pulse{animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(208,52,58,0)}50%{box-shadow:0 0 0 9px rgba(208,52,58,.35);border-color:rgba(255,130,130,.8)}}
 @media (prefers-reduced-motion:reduce){#bSwitch.pulse{animation:none;border-color:rgba(255,130,130,.8)}}
+#grain{position:fixed;inset:-128px;z-index:3;pointer-events:none;opacity:.06;mix-blend-mode:overlay;animation:grain .5s steps(4) infinite}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-37px,21px)}50%{transform:translate(19px,-44px)}75%{transform:translate(-11px,53px)}100%{transform:translate(0,0)}}
+@media (prefers-reduced-motion:reduce){#grain{animation:none}}
 #twpz{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);touch-action:manipulation}
 #twpz.open{display:flex}
 #twpz .f{width:min(820px,96vw);height:min(370px,94vh);background:#0d0c0b;border:1px solid rgba(255,255,255,.14);border-radius:14px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}

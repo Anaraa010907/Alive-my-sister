@@ -209,8 +209,8 @@ const pzRoot=document.getElementById('twpz');
 function openPuzzle(o,mode,who){
   if(!pzRoot||S.pz)return;
   const p=mode==='clue'?S.obj[o.puzzle]:o;if(!p)return;
-  const K=TW.puzzles&&TW.puzzles[p.kind],data=pzData(p),body=pzRoot.querySelector('.b');
-  pzRoot.querySelector('.ti').textContent=(K&&K.title)||'Оньсого';
+  const PZK=TW.puzzles&&TW.puzzles[p.kind],data=pzData(p),body=pzRoot.querySelector('.b');
+  pzRoot.querySelector('.ti').textContent=(PZK&&PZK.title)||'Оньсого';
   pzRoot.querySelector('.su').textContent=mode==='clue'?'Найздаа хэлж өг':(p.kind==='split'?'Тэмдгээ найздаа хэлээд, түүнийхийг оруул':'Найзаасаа асууж шийд');
   body.innerHTML='';
   const z={obj:o,p,mode,who,cleanup:null,done:false};S.pz=z;
@@ -218,8 +218,8 @@ function openPuzzle(o,mode,who){
   const api={success:()=>finishPz(z,true),fail:()=>finishPz(z,false),close:()=>{if(S&&S.pz===z)closePuzzle();}};
   try{
     let r=null;
-    if(K&&mode==='clue'&&K.showClue)r=K.showClue(body,data,api);
-    else if(K&&mode==='solve'&&K.solve)r=K.solve(body,data,api);
+    if(PZK&&mode==='clue'&&PZK.showClue)r=PZK.showClue(body,data,api);
+    else if(PZK&&mode==='solve'&&PZK.solve)r=PZK.solve(body,data,api);
     else{body.innerHTML='<div style="padding:28px;text-align:center;opacity:.8">Энэ оньсого удахгүй нэмэгдэнэ.</div>';
       if(mode==='solve'){const b=document.createElement('button');b.textContent='Шийдсэн гэж үзэх';b.className='twpz-fallback';b.onclick=()=>api.success();body.firstChild.appendChild(document.createElement('br'));body.firstChild.appendChild(b);}}
     if(typeof r==='function')z.cleanup=r;
@@ -384,7 +384,7 @@ function update(dt){
     }
   }else if(S.mode==='ending')updateEnding(dt);
   else if(S.mode==='title')for(const c of S.chars)updateChar(c,dt,IDLE);
-  S.noises.length=0;
+  if(!(S.mode==='play'&&S.netMode!=='online'&&S.pz))S.noises.length=0;
   updateFx(dt);updateCams(dt);
 }
 function newAmb(w,p,cam){
@@ -835,7 +835,7 @@ function drawPanel(w){
 }
 const grain=document.createElement('canvas');grain.width=grain.height=128;
 {const g=grain.getContext('2d'),id=g.createImageData(128,128);for(let i=0;i<id.data.length;i+=4){const v=Math.random()*255|0;id.data[i]=id.data[i+1]=id.data[i+2]=v;id.data[i+3]=255;}g.putImageData(id,0,0);}
-let grainPat=null;
+(function(){try{const d=document.createElement('div');d.id='grain';d.style.backgroundImage='url('+grain.toDataURL()+')';document.body.appendChild(d);}catch(e){}})();
 function viewW(){return S.netMode==='online'?S.role:S.active;}
 function render(){
   ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,VW,GH);
@@ -848,8 +848,6 @@ function render(){
   if(S.glow>0){const g=ctx.createRadialGradient(VW/2,GH*0.6,0,VW/2,GH*0.6,Math.max(VW,GH)*0.7);g.addColorStop(0,`rgba(255,248,235,${S.glow*0.35})`);g.addColorStop(1,'rgba(255,248,235,0)');ctx.fillStyle=g;ctx.fillRect(0,0,VW,GH);}
   if(S.white>0){ctx.fillStyle=`rgba(244,242,238,${S.white})`;ctx.fillRect(0,0,VW,GH);}
   if(S.paused){ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fillRect(0,0,VW,GH);}
-  if(!grainPat)grainPat=ctx.createPattern(grain,'repeat');
-  ctx.save();ctx.globalAlpha=0.05;ctx.globalCompositeOperation='overlay';ctx.translate(-(Math.random()*128|0),-(Math.random()*128|0));ctx.fillStyle=grainPat;ctx.fillRect(0,0,VW+128,GH+128);ctx.restore();
 }
 
 // ================= progress & game API =================
@@ -891,6 +889,7 @@ function pauseGame(v,fromNet){
   if(!S||(S.mode!=='play'&&S.mode!=='ending'))v=false;
   v=!!v;if(S.paused===v)return;S.paused=v;
   if(!fromNet&&S.netMode==='online')netSend({t:'pause',v});
+  if(v&&S.pz)closePuzzle();
   for(const k in K)K[k]=false;for(const k in T)T[k]=false;
   if(AC){if(v)AC.suspend().catch(()=>{});else AC.resume().catch(()=>{});}
   TW.emit('pause',{paused:v});
@@ -929,7 +928,7 @@ addEventListener('resize',layout);
 document.addEventListener('visibilitychange',()=>{if(!AC)return;if(document.hidden)AC.suspend();else if(S&&S.mode!=='title'&&!S.paused)AC.resume().catch(()=>{});});
 if(TW.net){
   try{const orig=TW.net.setInfo;if(orig)TW.net.setInfo=function(o){myInfo=Object.assign({},myInfo,o||{});return orig.apply(TW.net,arguments);};
-    TW.net.on('message',onNet);TW.net.on('peer',p=>TW.emit('peer',{present:!!(p&&p.present),info:p&&p.info}));}catch(e){logErr('net.hook',e);}
+    TW.net.on('message',onNet);TW.net.on('peer',p=>{if(!(p&&p.present)&&S&&S.pz)closePuzzle();TW.emit('peer',{present:!!(p&&p.present),info:p&&p.info});});}catch(e){logErr('net.hook',e);}
 }
 const firstId=chapterOrder()[0];
 loadChapter(TW.chapters[firstId]);S=makeState();layout();updateCams(0,true);

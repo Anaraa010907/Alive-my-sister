@@ -1,0 +1,638 @@
+[
+ {
+  "num": 1,
+  "name": "Boot + title + portrait rotate overlay",
+  "status": "PASS",
+  "secs": 6.2,
+  "error": null,
+  "checks": [
+   {
+    "ok": true,
+    "msg": "engine + UI booted (TW.game, TW.ui, __game)",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "title shows Ганцаараа тоглох / Онлайн тоглох / Бүлгүүд",
+    "shim": false,
+    "info": "[\"Ганцаараа тоглох\", \"Онлайн тоглох\", \"Бүлгүүд\"]"
+   },
+   {
+    "ok": true,
+    "msg": "landscape: rotate overlay hidden",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "zero console errors / page errors on load (favicon 404 excluded, see minor bug)",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "portrait 390x844: rotate overlay visible",
+    "shim": false,
+    "info": "{\"vis\": true, \"rect\": [0, 0, 390, 844], \"hit\": [true, true, true, true, true, true], \"text\": \"Утсаа хэвтээ эргүүлнэ үүХоёр ертөнц зөвхөн хэвтээ дэлгэц дээ\"}"
+   },
+   {
+    "ok": true,
+    "msg": "portrait: rotate overlay covers the whole screen (only it is hit-testable)",
+    "shim": false,
+    "info": "[true, true, true, true, true, true]"
+   },
+   {
+    "ok": true,
+    "msg": "portrait: text «Утсаа хэвтээ эргүүлнэ үү»",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "back to landscape: rotate overlay hidden",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "rotating to portrait mid-game shows the overlay and pauses",
+    "shim": false,
+    "info": "{\"vis\": true, \"paused\": true, \"mode\": \"play\"}"
+   },
+   {
+    "ok": true,
+    "msg": "rotating back to landscape hides it and resumes",
+    "shim": false,
+    "info": "{\"vis\": false, \"paused\": false}"
+   },
+   {
+    "ok": true,
+    "msg": "portrait run: no console/page errors",
+    "shim": false,
+    "info": null
+   }
+  ],
+  "notes": [],
+  "shots": [
+   "tests/qa/shots/01_title_landscape.png",
+   "tests/qa/shots/01_portrait_rotate.png"
+  ]
+ },
+ {
+  "num": 2,
+  "name": "Solo ch1 playthrough, one world per screen, ⇅",
+  "status": "PASS",
+  "secs": 3.4,
+  "error": null,
+  "checks": [
+   {
+    "ok": true,
+    "msg": "Ганцаараа тоглох starts ch1 in solo mode",
+    "shim": false,
+    "info": "{\"id\": \"ch1\", \"mode\": \"play\", \"active\": 0, \"net\": \"solo\"}"
+   },
+   {
+    "ok": true,
+    "msg": "solo: one panel per frame, the active (brother) world only",
+    "shim": false,
+    "info": "[\"АХ · АМЬД ЕРТӨНЦ\"]"
+   },
+   {
+    "ok": true,
+    "msg": "solo: ⇅ button visible on touch",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "tapping ⇅ switches the whole view to the sister world",
+    "shim": false,
+    "info": "{\"active\": 1, \"lbl\": [\"ДҮҮ · ҮХЭГСДИЙН ЕРТӨНЦ\"]}"
+   },
+   {
+    "ok": true,
+    "msg": "sky colour: sepia living world vs cold dead world",
+    "shim": false,
+    "info": "{\"w0\": [78, 71, 59], \"w1\": [39, 40, 43]}"
+   },
+   {
+    "ok": true,
+    "msg": "⇅ again switches back to the brother",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "river: walking into deep water kills, respawn at checkpoint",
+    "shim": false,
+    "info": "{\"mode\": \"play\", \"stage\": 0, \"deaths\": 1, \"B1\": false, \"G1\": false, \"R1\": false, \"crate\": 1300, \"b\": 620, \"s\": 100}"
+   },
+   {
+    "ok": true,
+    "msg": "levers B1 / G1 / R1 operated by the sister",
+    "shim": false,
+    "info": "{\"L1\": {\"mode\": \"play\", \"stage\": 1, \"deaths\": 1, \"B1\": true, \"G1\": false, \"R1\": false, \"crate\": 1300, \"b\": 780, \"s\": 1066}, \"L2\": {\"mode\": \"play\", \"stage\": 3, \"deaths\": 1, \"B1\": true, \"G1\": true, \"R1\": false, \"crate\": 1500, \"b\": 1786, \"s\": 1734}, \"L3\": {\"mode\": \"play\", \"stage\": 5, \"deaths\": 1, \"B1\": true, \"G1\": true, \"R1\": true, \"crate\": 1500, \"b\": 2048, \"s\": 2412}}"
+   },
+   {
+    "ok": true,
+    "msg": "crate pushed onto the plate",
+    "shim": false,
+    "info": "1500"
+   },
+   {
+    "ok": true,
+    "msg": "ch1 ends: mode done + chapterEnd event",
+    "shim": false,
+    "info": "{\"final\": {\"mode\": \"done\", \"stage\": 5, \"deaths\": 1, \"B1\": true, \"G1\": true, \"R1\": true, \"crate\": 1500, \"b\": 2892, \"s\": 2894}, \"end\": {\"id\": \"ch1\", \"next\": \"ch2\", \"deaths\": 1}}"
+   },
+   {
+    "ok": true,
+    "msg": "UI shows the chapter-end paper",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "no console/page errors",
+    "shim": false,
+    "info": null
+   }
+  ],
+  "notes": [],
+  "shots": [
+   "tests/qa/shots/02_ch1_brother_view.png",
+   "tests/qa/shots/02_ch1_sister_view.png",
+   "tests/qa/shots/02_ch1_end.png"
+  ]
+ },
+ {
+  "num": 3,
+  "name": "Solo ch2 playthrough with real puzzle overlays, dark zone, ghost map, shadow wolf",
+  "status": "PASS*",
+  "secs": 25.6,
+  "error": null,
+  "checks": [
+   {
+    "ok": true,
+    "msg": "Бүлгүүд -> ch2 card starts chapter 2",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "STRICT engine: PZ1 overlay shows the real symbols solver (9 keys)",
+    "shim": false,
+    "info": "{\"open\": true, \"keys\": 9, \"text\": \"ЧИ ХИЙНЭ\\nДарааллаар нь дар\\n\\nНайз чинь чулуун дээрх 4 тамгыг хэлнэ. Тэр дарааллаа\", \"fallback\": false, \"solveFn\": \"function\", \"genFn\": \"function\", \"drawFn\": \"function\"}"
+   },
+   {
+    "ok": true,
+    "msg": "STRICT engine: TW.puzzles.symbols intact after opening an overlay",
+    "shim": false,
+    "info": "{\"solveFn\": \"function\", \"genFn\": \"function\", \"drawFn\": \"function\"}"
+   },
+   {
+    "ok": true,
+    "msg": "A+B: brother hides from W1, calls; S1 trapped; sister crosses to PZ1",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "C: ◎ at CL1 opens the symbols clue overlay",
+    "shim": true,
+    "info": "{\"id\": \"PZ1\", \"mode\": \"clue\", \"who\": 0, \"kind\": \"symbols\"}"
+   },
+   {
+    "ok": true,
+    "msg": "C: clue stone shows the 4 generated symbols in order",
+    "shim": true,
+    "info": "{\"dom\": [\"ulzii\", \"fire\", \"wave\", \"khas\"], \"answer\": \"Өлзий хээ → Гал → Долгион → Хас\"}"
+   },
+   {
+    "ok": true,
+    "msg": "C: ✕ closes the clue overlay",
+    "shim": true,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "C: ◎ at PZ1 opens the solver (9 symbols)",
+    "shim": true,
+    "info": "{\"pz\": {\"id\": \"PZ1\", \"mode\": \"solve\", \"who\": 1, \"kind\": \"symbols\"}, \"keys\": 9}"
+   },
+   {
+    "ok": true,
+    "msg": "C fail: wrong order -> 'fail' noise r320 in the solver's world",
+    "shim": true,
+    "info": "[{\"w\": 1, \"x\": 1500, \"r\": 320}]"
+   },
+   {
+    "ok": true,
+    "msg": "C fail: overlay closes by itself",
+    "shim": true,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "C fail (solo, real-time loop): the 'fail' noise reaches nearby S1 (185 away) and wakes it",
+    "shim": true,
+    "info": "{\"heard\": [\"S1\", \"S2\", \"S3\"], \"S1\": [\"search\", \"search\"]}"
+   },
+   {
+    "ok": true,
+    "msg": "C fail: ◎ is ignored until 3 s after the fail, then the solver reopens",
+    "shim": true,
+    "info": "{\"opened\": true, \"dt\": 3.03}"
+   },
+   {
+    "ok": true,
+    "msg": "C: correct order solves PZ1 -> brother gate G1 opens, overlay auto-closes",
+    "shim": true,
+    "info": "{\"PZ1\": true, \"G1\": true}"
+   },
+   {
+    "ok": true,
+    "msg": "D: seenBy:'other' SW1 is NOT drawn in the brother's view",
+    "shim": false,
+    "info": "{\"lbl\": [\"АХ · АМЬД ЕРТӨНЦ\"], \"art\": []}"
+   },
+   {
+    "ok": true,
+    "msg": "D: SW1 is drawn (as a shadow) in the sister's view",
+    "shim": false,
+    "info": "{\"lbl\": [\"ДҮҮ · ҮХЭГСДИЙН ЕРТӨНЦ\"], \"art\": [\"SW1\"]}"
+   },
+   {
+    "ok": true,
+    "msg": "E: ◎ at CL2 opens the cave-map clue",
+    "shim": true,
+    "info": "{\"id\": \"PZ2\", \"mode\": \"clue\", \"who\": 1, \"kind\": \"maze\"}"
+   },
+   {
+    "ok": true,
+    "msg": "E: ◎ at PZ2 opens the door solver",
+    "shim": true,
+    "info": "{\"id\": \"PZ2\", \"mode\": \"solve\", \"who\": 0, \"kind\": \"maze\"}"
+   },
+   {
+    "ok": true,
+    "msg": "E: each step shows the landmark from the map on a door (positions differ from the map)",
+    "shim": true,
+    "info": "Овоолсон чулуу [3] → Худаг [3] → Овоолсон чулуу [3] → Морины гавал [3]"
+   },
+   {
+    "ok": true,
+    "msg": "E: right doors -> G2 opens",
+    "shim": true,
+    "info": "{\"PZ2\": true, \"G2\": true}"
+   },
+   {
+    "ok": true,
+    "msg": "E: living world is black inside the cave except a circle around the brother",
+    "shim": false,
+    "info": "{\"lbl\": [\"АХ · АМЬД ЕРТӨНЦ\"], \"cx\": 2461, \"near\": 56.6, \"nearN\": 30, \"farMax\": 5, \"farAvg\": 0, \"farN\": 2400, \"outside\": 89.8, \"outsideN\": 660}"
+   },
+   {
+    "ok": true,
+    "msg": "E: sister's view draws the blue ghost map of the cave",
+    "shim": false,
+    "info": "{\"cave\": 460, \"elsewhere\": 0}"
+   },
+   {
+    "ok": true,
+    "msg": "E: ghost map shows the brother as a small light",
+    "shim": false,
+    "info": "234"
+   },
+   {
+    "ok": true,
+    "msg": "E: brother crosses the dark cave (3 gaps + rock) without dying",
+    "shim": false,
+    "info": "{\"ok\": true, \"i\": 159, \"x\": 2733.9}"
+   },
+   {
+    "ok": true,
+    "msg": "F: sister stele shows code positions 1-2",
+    "shim": true,
+    "info": "{\"pz\": {\"id\": \"PZ3B\", \"mode\": \"solve\", \"who\": 1, \"kind\": \"split\"}, \"tiles\": [[0, 3], [1, 2]]}"
+   },
+   {
+    "ok": true,
+    "msg": "F: brother stele shows positions 3-4",
+    "shim": true,
+    "info": "{\"pz\": {\"id\": \"PZ3A\", \"mode\": \"solve\", \"who\": 0, \"kind\": \"split\"}, \"tiles\": [[2, 0], [3, 3]]}"
+   },
+   {
+    "ok": true,
+    "msg": "F: brother enters the sister's symbols -> sister gate G3B opens",
+    "shim": true,
+    "info": "{\"PZ3A\": true, \"G3B\": true}"
+   },
+   {
+    "ok": true,
+    "msg": "F: sister enters the brother's symbols -> brother gate G3A opens",
+    "shim": true,
+    "info": "{\"PZ3B\": true, \"G3A\": true}"
+   },
+   {
+    "ok": true,
+    "msg": "G: call lures S2 under the trunk, sister drops and runs past",
+    "shim": false,
+    "info": "{\"mode\": \"play\", \"stage\": 9, \"deaths\": 0, \"active\": 1, \"b\": [3192, 190, false], \"s\": [3518, 190], \"S1\": {\"x\": 1315, \"st\": \"idle\", \"face\": -1}, \"SW1\": {\"x\": 1903, \"st\": \"patrol\", \"face\": -1}, \"S2\": {\"x\": 3204, \"st\": \"search\", \"face\": -1}, \"W2\": {\"x\": 3426, \"st\": \"patrol\", \"face\": 1}}"
+   },
+   {
+    "ok": true,
+    "msg": "H: brother escapes W2 to the pocket behind the raven rock",
+    "shim": false,
+    "info": "{\"mode\": \"play\", \"stage\": 10, \"deaths\": 0, \"active\": 0, \"b\": [3782, 190, false], \"s\": [3518, 190], \"S1\": {\"x\": 1315, \"st\": \"idle\", \"face\": -1}, \"SW1\": {\"x\": 2054, \"st\": \"patrol\", \"face\": -1}, \"S2\": {\"x\": 3318, \"st\": \"idle\", \"face\": 1}, \"W2\": {\"x\": 3683, \"st\": \"howl\", \"face\": 1}}"
+   },
+   {
+    "ok": true,
+    "msg": "H: ◎ at CL4 opens the drum clue",
+    "shim": true,
+    "info": "{\"id\": \"PZ4\", \"mode\": \"clue\", \"who\": 0, \"kind\": \"drum\"}"
+   },
+   {
+    "ok": true,
+    "msg": "H: ◎ at PZ4 opens the drum solver",
+    "shim": true,
+    "info": "{\"id\": \"PZ4\", \"mode\": \"solve\", \"who\": 1, \"kind\": \"drum\"}"
+   },
+   {
+    "ok": true,
+    "msg": "H: tapped rhythm (Space short/hold) matches the clue",
+    "shim": true,
+    "info": "{\"beats\": [1, 1, 1, 1, 0, 0], \"dom\": [1, 1, 1, 1, 0, 0], \"answer\": \"урт, урт, урт, урт, богино, богино  (— — — — • •)\"}"
+   },
+   {
+    "ok": true,
+    "msg": "H: drum solved -> G4 opens",
+    "shim": true,
+    "info": "{\"PZ4\": true, \"G4\": true}"
+   },
+   {
+    "ok": true,
+    "msg": "ch2 ends (mode done, chapterEnd, 0 deaths)",
+    "shim": false,
+    "info": "{\"final\": {\"mode\": \"done\", \"stage\": 11, \"deaths\": 0, \"active\": 1, \"b\": [3942, 190, false], \"s\": [3944, 190], \"S1\": {\"x\": 1315, \"st\": \"idle\", \"face\": -1}, \"SW1\": {\"x\": 1796, \"st\": \"patrol\", \"face\": 1}, \"S2\": {\"x\": 3318, \"st\": \"idle\", \"face\": 1}, \"W2\": {\"x\": 3411, \"st\": \"patrol\", \"face\": -1}}, \"time\": 109.3}"
+   },
+   {
+    "ok": true,
+    "msg": "no console/page errors",
+    "shim": false,
+    "info": null
+   }
+  ],
+  "notes": [
+   "shim installed over 7 puzzle modules (writes ignored)"
+  ],
+  "shots": [
+   "tests/qa/shots/03_strict_symbols_overlay.png",
+   "tests/qa/shots/03_c_symbols_clue.png",
+   "tests/qa/shots/03_c_symbols_fail.png",
+   "tests/qa/shots/03_c_symbols_solve.png",
+   "tests/qa/shots/03_d_brother_view_no_wolf.png",
+   "tests/qa/shots/03_d_sister_view_shadow_wolf.png",
+   "tests/qa/shots/03_e_maze_clue.png",
+   "tests/qa/shots/03_e_maze_solve.png",
+   "tests/qa/shots/03_e_dark_brother.png",
+   "tests/qa/shots/03_e_ghost_map_sister.png",
+   "tests/qa/shots/03_f_split_brother.png",
+   "tests/qa/shots/03_h_drum_clue.png",
+   "tests/qa/shots/03_h_drum_solve.png",
+   "tests/qa/shots/03_ch2_end.png"
+  ]
+ },
+ {
+  "num": 4,
+  "name": "Online two tabs (real lobby + net.js ?net=local)",
+  "status": "PASS*",
+  "secs": 40.3,
+  "error": null,
+  "checks": [
+   {
+    "ok": true,
+    "msg": "A: Өрөө үүсгэх -> 4-letter code (local transport, host)",
+    "shim": false,
+    "info": "QGWW"
+   },
+   {
+    "ok": true,
+    "msg": "roles Ах (A) / Дүү (B); host Эхлэх enabled",
+    "shim": false,
+    "info": "{\"A\": [\"Чи\", \"Найз\"], \"B\": [\"Найз\", \"Чи\"]}"
+   },
+   {
+    "ok": true,
+    "msg": "B (guest) sees «Найз чинь бүлгээ сонгож байна…»",
+    "shim": false,
+    "info": "БҮЛЭГ\n\nНайз чинь бүлгээ сонгож байна…\n\nОдоогоор: 2-р бүлэг · Чонын хөндий"
+   },
+   {
+    "ok": true,
+    "msg": "host Эхлэх: both start ch2 online, roles 0/1, same seed",
+    "shim": false,
+    "info": "{\"A\": {\"role\": 0, \"ch\": \"ch2\", \"seed\": 725840089, \"ew\": [0], \"sw\": \"none\"}, \"B\": {\"role\": 1, \"ch\": \"ch2\", \"seed\": 725840089, \"ew\": [1], \"sw\": \"none\"}}"
+   },
+   {
+    "ok": true,
+    "msg": "each page simulates only its world's enemies; ⇅ hidden online",
+    "shim": false,
+    "info": "{\"A\": {\"role\": 0, \"ch\": \"ch2\", \"seed\": 725840089, \"ew\": [0], \"sw\": \"none\"}, \"B\": {\"role\": 1, \"ch\": \"ch2\", \"seed\": 725840089, \"ew\": [1], \"sw\": \"none\"}}"
+   },
+   {
+    "ok": true,
+    "msg": "B title card: «Чи — Дүү · үхэгсдийн ертөнц»",
+    "shim": false,
+    "info": "Чи — Дүү · үхэгсдийн ертөнц"
+   },
+   {
+    "ok": true,
+    "msg": "both pages show only their own world",
+    "shim": false,
+    "info": "{\"A\": [\"АХ · АМЬД ЕРТӨНЦ\"], \"B\": [\"ДҮҮ · ҮХЭГСДИЙН ЕРТӨНЦ\"]}"
+   },
+   {
+    "ok": true,
+    "msg": "A: ◎ at CL1 shows the clue (brother screen)",
+    "shim": true,
+    "info": "{\"pz\": {\"id\": \"PZ1\", \"mode\": \"clue\", \"who\": 0, \"kind\": \"symbols\"}, \"seq\": [\"wave\", \"horn\", \"ulzii\", \"mountain\"]}"
+   },
+   {
+    "ok": true,
+    "msg": "B: ◎ at PZ1 opens the solver; A's clue matches B's answer (same seed)",
+    "shim": true,
+    "info": "{\"id\": \"PZ1\", \"mode\": \"solve\", \"who\": 1, \"kind\": \"symbols\"}"
+   },
+   {
+    "ok": true,
+    "msg": "B fail (online): 'fail' noise reaches S1, overlay closes",
+    "shim": true,
+    "info": "[\"S1\", \"S2\", \"S3\"]"
+   },
+   {
+    "ok": true,
+    "msg": "B: retry possible after 3 s",
+    "shim": true,
+    "info": "{\"opened\": true, \"dt\": 3.03}"
+   },
+   {
+    "ok": true,
+    "msg": "B solves PZ1 -> trig -> gate G1 opens on A's screen",
+    "shim": true,
+    "info": "{\"B\": {\"PZ1\": true, \"G1\": true}, \"A\": {\"PZ1\": false, \"G1\": true}}"
+   },
+   {
+    "ok": true,
+    "msg": "A: G1 rises fully",
+    "shim": true,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "SW1 streamed: drawn on B (sister) only, not on A",
+    "shim": false,
+    "info": "{\"A\": [], \"B\": [\"ghost:wolf\"], \"ghosts\": [\"wolf@2071\"]}"
+   },
+   {
+    "ok": true,
+    "msg": "A: cave is black except a circle around the brother",
+    "shim": false,
+    "info": "{\"lbl\": [\"АХ · АМЬД ЕРТӨНЦ\"], \"cx\": 2462, \"near\": 59.1, \"nearN\": 30, \"farMax\": 5, \"farAvg\": 0, \"farN\": 2500, \"outside\": 71.7, \"outsideN\": 264}"
+   },
+   {
+    "ok": true,
+    "msg": "B: ghost map of A's cave + brother light (from the network position)",
+    "shim": false,
+    "info": "{\"blue\": 498, \"light\": 217, \"bx\": 2462}"
+   },
+   {
+    "ok": true,
+    "msg": "split: both steles open at the same time",
+    "shim": true,
+    "info": "{\"A\": {\"id\": \"PZ3A\", \"mode\": \"solve\", \"who\": 0, \"kind\": \"split\"}, \"B\": {\"id\": \"PZ3B\", \"mode\": \"solve\", \"who\": 1, \"kind\": \"split\"}}"
+   },
+   {
+    "ok": true,
+    "msg": "split: each enters the other's symbols -> both partner gates open on both pages",
+    "shim": true,
+    "info": "{\"A\": {\"PZ3A\": true, \"G3A\": true, \"G3B\": true}, \"B\": {\"PZ3B\": true, \"G3A\": true, \"G3B\": true}}"
+   },
+   {
+    "ok": true,
+    "msg": "pause on A -> B paused + pause menu",
+    "shim": false,
+    "info": "{\"A\": true, \"B\": true}"
+   },
+   {
+    "ok": true,
+    "msg": "B has a puzzle/clue overlay open when A pauses: the pause menu is on top (not hidden behind #twpz)",
+    "shim": false,
+    "info": "{\"B overlay\": {\"id\": \"PZ2\", \"mode\": \"clue\", \"who\": 1, \"kind\": \"maze\"}, \"on top\": \".twui-pause\"}"
+   },
+   {
+    "ok": true,
+    "msg": "resume on B -> A resumes",
+    "shim": false,
+    "info": null
+   },
+   {
+    "ok": true,
+    "msg": "B closes the tab -> A shows «Найз чинь гарлаа» and pauses",
+    "shim": false,
+    "info": "Найз чинь гарлаа"
+   },
+   {
+    "ok": true,
+    "msg": "«Найз чинь гарлаа» is on top even though A had a clue overlay open",
+    "shim": false,
+    "info": "{\"A overlay\": {\"id\": \"PZ1\", \"mode\": \"clue\", \"who\": 0, \"kind\": \"symbols\"}, \"on top\": \".twui-peerleft\"}"
+   },
+   {
+    "ok": true,
+    "msg": "no console/page errors on either page",
+    "shim": false,
+    "info": null
+   }
+  ],
+  "notes": [
+   "shim installed on both pages (needed because of B1)"
+  ],
+  "shots": [
+   "tests/qa/shots/04_lobby_host_waiting.png",
+   "tests/qa/shots/04_lobby_host_ready.png",
+   "tests/qa/shots/04_lobby_guest.png",
+   "tests/qa/shots/04_A_start.png",
+   "tests/qa/shots/04_B_start.png",
+   "tests/qa/shots/04_A_symbols_clue.png",
+   "tests/qa/shots/04_B_symbols_solve.png",
+   "tests/qa/shots/04_B_shadow_wolf.png",
+   "tests/qa/shots/04_A_dark.png",
+   "tests/qa/shots/04_B_ghost_map.png",
+   "tests/qa/shots/04_A_split.png",
+   "tests/qa/shots/04_B_split.png",
+   "tests/qa/shots/04_B_paused_by_A.png",
+   "tests/qa/shots/04_B_pause_hidden_behind_overlay.png",
+   "tests/qa/shots/04_A_peer_left_behind_overlay.png",
+   "tests/qa/shots/04_A_peer_left.png"
+  ]
+ },
+ {
+  "num": 5,
+  "name": "Puzzle module suites (tests/puzzles, tests/puzzles-b)",
+  "status": "PASS",
+  "secs": 132.4,
+  "error": null,
+  "checks": [
+   {
+    "ok": true,
+    "msg": "tests/puzzles/test_puzzles.py: exit 0, 43 ok, 0 FAIL (113s)",
+    "shim": false,
+    "info": "[\"ALL OK\"]"
+   },
+   {
+    "ok": true,
+    "msg": "tests/puzzles-b/test_puzzles_b.py: exit 0, 75 ok, 0 FAIL (19s)",
+    "shim": false,
+    "info": "[\"all checks passed\"]"
+   }
+  ],
+  "notes": [],
+  "shots": []
+ },
+ {
+  "num": 6,
+  "name": "Performance: ch2, 600 updates+renders < 4 s",
+  "status": "PASS",
+  "secs": 8.8,
+  "error": null,
+  "checks": [
+   {
+    "ok": true,
+    "msg": "ch2 start, 8 enemies: 600 x (update+render) = 329 ms (0.55 ms/frame), limit 4000",
+    "shim": false,
+    "info": "328.8"
+   },
+   {
+    "ok": true,
+    "msg": "cave (ghost map + dark zone in view): 600 x (update+render) = 168 ms (0.28 ms/frame)",
+    "shim": false,
+    "info": "168.3"
+   },
+   {
+    "ok": true,
+    "msg": "no console/page errors",
+    "shim": false,
+    "info": null
+   }
+  ],
+  "notes": [
+   "info (not a pass/fail criterion): forcing a raster flush every frame (1-px getImageData), dpr 2 software raster: 14.3 ms/frame",
+   "info: real rAF loop, dpr 2 (1688x780 canvas), headless software raster: 59.3 fps, frame p50 16.7 ms, p95 16.8 ms (dpr 1 holds 60 fps)"
+  ],
+  "shots": [
+   "tests/qa/shots/06_perf_cave_sister.png"
+  ]
+ }
+]
