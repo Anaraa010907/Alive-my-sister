@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Хоёр ертөнц — net test</title>
+<style>
+/* Developer tool for TW.net: open on two devices (or two tabs with ?net=local) */
+html,body{margin:0;background:#000;color:#e8e4da;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:760px;margin:0 auto;padding:14px}
+h1{font:400 20px Georgia,serif;letter-spacing:.25em;margin:4px 0 2px}
+.sub{opacity:.6;margin-bottom:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+button,input,select{font:inherit;color:#fff;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.28);border-radius:999px;min-height:44px;padding:0 18px;box-sizing:border-box}
+button:active{background:rgba(255,255,255,.22)}
+input{width:7.5em;text-transform:uppercase;letter-spacing:.3em;text-align:center;border-radius:12px}
+select{border-radius:12px}
+.big{font:400 34px Georgia,serif;letter-spacing:.3em;color:#fff;min-width:5em}
+.box{border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px;margin:10px 0;background:#070707}
+.k{opacity:.55;display:inline-block;min-width:7em}
+#st.connected{color:#9fd49f}#st.error{color:#d0343a}#st.connecting{color:#7fa7e6}
+pre{margin:0;white-space:pre-wrap;word-break:break-all;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace}
+#log{height:300px;overflow:auto}
+</style>
+</head>
+<body>
+<main>
+  <h1>NET TEST</h1>
+  <div class="sub">TW.net — <span id="tp"></span>. Two devices: Create on one, Join with the code on the other. One computer: add <code>?net=local</code> and use two tabs.</div>
+
+  <div class="row">
+    <button id="bCreate">Create</button>
+    <input id="code" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters">
+    <button id="bJoin">Join</button>
+    <button id="bLeave">Leave</button>
+  </div>
+  <div class="row">
+    <button id="bPing">Send ping</button>
+    <button id="bBurst">10 × st</button>
+    <label>role <select id="role"><option value="">—</option><option value="0">0 Ах</option><option value="1">1 Дүү</option></select></label>
+    <label><input type="checkbox" id="ready" style="width:auto;min-height:0"> ready</label>
+  </div>
+
+  <div class="box">
+    <div><span class="k">room</span><span class="big" id="room">----</span></div>
+    <div><span class="k">status</span><b id="st">idle</b></div>
+    <div><span class="k">me</span><pre id="me" style="display:inline"></pre></div>
+    <div><span class="k">peer</span><pre id="peer" style="display:inline">—</pre></div>
+  </div>
+  <div class="box"><pre id="log"></pre></div>
+</main>
+
+<script src="js/tw.js"></script>
+<script src="js/config.js"></script>
+<script src="js/net.js"></script>
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+var net = TW.net, t0 = Date.now(), n = 0;
+window.__ev = [];                        // every TW.net event, for scripted tests
+function log(s){
+  var line = ((Date.now() - t0) / 1000).toFixed(2) + '  ' + s;
+  var el = $('log'); el.textContent = line + '\n' + el.textContent.slice(0, 20000);
+}
+function rec(ev, d){ window.__ev.push({ ev: ev, d: d, t: Date.now() }); }
+function show(){
+  $('room').textContent = net.code || '----';
+  $('me').textContent = JSON.stringify({ id: net.id, host: net.isHost, connected: net.connected });
+  $('peer').textContent = net.peer() ? JSON.stringify(net.peer()) : '—';
+}
+$('tp').textContent = 'transport: ' + net.transport + (net.transport === 'supabase' ? ' (supabase-js ' + net.libVersion + ')' : '') + ', available: ' + net.available();
+
+net.on('status', function(s){ rec('status', s); var e = $('st'); e.textContent = s.state + (s.detail ? ' · ' + s.detail : '') + (s.attempt ? ' #' + s.attempt : '') + (s.reason ? ' (' + s.reason + ')' : ''); e.className = s.state; log('status ' + JSON.stringify(s)); show(); });
+net.on('peer', function(p){ rec('peer', p); log('peer ' + JSON.stringify(p)); show(); });
+net.on('message', function(m){
+  rec('message', m);
+  if (m && m.t === 'ping') net.send({ t: 'pong', n: m.n, ts: m.ts });
+  if (m && m.t === 'pong') { log('pong #' + m.n + ' rtt ' + (Date.now() - m.ts) + ' ms'); return; }
+  log('msg ' + JSON.stringify(m));
+});
+
+function act(p, what){
+  p.then(function(r){ log(what + ' ok ' + (r || '')); if (what === 'create') $('code').value = r; show(); },
+         function(e){ log(what + ' failed: ' + e.message); show(); });
+}
+$('bCreate').onclick = function(){ act(net.create(), 'create'); };
+$('bJoin').onclick = function(){ act(net.join($('code').value), 'join'); };
+$('bLeave').onclick = function(){ net.leave(); log('leave'); show(); };
+$('bPing').onclick = function(){ n++; var ok = net.send({ t: 'ping', n: n, ts: Date.now() }); log('ping #' + n + (ok ? '' : ' (not in a room)')); };
+$('bBurst').onclick = function(){ for (var i = 1; i <= 10; i++) net.send({ t: 'st', x: i, y: 0, vx: 0, face: 1, onGround: true, dying: false }); log('sent 10 st (x=1..10) in one tick'); };
+function info(){ var r = $('role').value; net.setInfo({ role: r === '' ? null : +r, ready: $('ready').checked }); show(); }
+$('role').onchange = info; $('ready').onchange = info;
+$('code').onkeydown = function(e){ if (e.key === 'Enter') $('bJoin').click(); };
+show();
+})();
+</script>
+</body>
+</html>

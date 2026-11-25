@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Хоёр ертөнц — UI preview</title>
+<link rel="stylesheet" href="css/ui.css">
+<style>
+/* preview-only: a fake game behind the UI (v2: one world per screen, always landscape) */
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+body{touch-action:none;-webkit-user-select:none;user-select:none;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#e8e4da}
+#cv{position:fixed;left:0;top:0;display:block}
+#controls{position:fixed;left:0;right:0;bottom:0;top:0;z-index:4;display:none;pointer-events:none}
+#controls .ctl{position:absolute;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.78);border:1.5px solid rgba(255,255,255,.24);background:rgba(255,255,255,.06);border-radius:999px;font-size:22px;box-sizing:border-box}
+#dbg{position:fixed;left:4px;bottom:4px;z-index:50;display:flex;flex-wrap:wrap;gap:3px;max-width:70vw;opacity:.6}
+#dbg button{font:10px/1 system-ui,sans-serif;padding:3px 5px;border:1px solid #555;background:#111;color:#bbb;border-radius:3px;cursor:pointer}
+html.shot #dbg{display:none}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="controls">
+  <div class="ctl" id="pad" style="justify-content:space-between;padding:0 24px;font-size:20px"><span>◀&#xFE0E;</span><span>▶&#xFE0E;</span></div>
+  <div class="ctl" id="bSwitch">⇅</div>
+  <div class="ctl" id="bAction">◎</div>
+  <div class="ctl" id="bJump">▲</div>
+</div>
+<div id="dbg">
+  <button data-d="start2">chapterStart ch2</button>
+  <button data-d="end1">chapterEnd ch1</button>
+  <button data-d="end2">chapterEnd ch2 (last)</button>
+  <button data-d="pauseOn">pause evt</button>
+  <button data-d="touch">touch ⇄</button>
+  <button data-d="peerJoin">peer join</button>
+  <button data-d="peerLeave">peer leave</button>
+  <button data-d="peerRole0">peer = Ах</button>
+  <button data-d="peerRole1">peer = Дүү</button>
+  <button data-d="hostStarts">host starts (guest)</button>
+  <button data-d="peerMenu">peerMenu</button>
+  <button data-d="netError">status error</button>
+</div>
+
+<script>
+// ---------- stub TW (event bus) ----------
+window.TW = {
+  H: 240, G: 190, chapters: {}, chapterOrder: [], ui: null, _h: {},
+  on(n, f){ (this._h[n] = this._h[n] || []).push(f); },
+  off(n, f){ const a = this._h[n]; if(a){ const i = a.indexOf(f); if(i >= 0) a.splice(i, 1); } },
+  emit(n, d){ console.log('[TW.emit]', n, JSON.stringify(d)); (this._h[n] || []).slice().forEach(f => { try{ f(d); }catch(e){ console.error(e); } }); }
+};
+
+// ---------- fake TW.net (contract: docs/ARCHITECTURE-v2.md) ----------
+// ?net=none → no TW.net at all; ?net=offline → create/join reject 'offline'; ?net=na → available() false
+(function(){
+  const q = new URLSearchParams(location.search), mode = q.get('net');
+  if(mode === 'none') return;
+  const h = {}, sleep = ms => new Promise(r => setTimeout(r, ms));
+  const emit = (n, d) => { console.log('[net.emit]', n, JSON.stringify(d)); (h[n] || []).slice().forEach(f => { try{ f(d); }catch(e){ console.error(e); } }); };
+  let peerInfo = null, mine = {};
+  const net = {
+    code: null, isHost: false, connected: false,
+    available(){ return mode !== 'na'; },
+    async create(){
+      emit('status', { state:'connecting' }); await sleep(300);
+      if(mode === 'offline'){ emit('status', { state:'error', detail:'offline' }); throw new Error('offline'); }
+      net.code = 'KXRM'; net.isHost = true; net.connected = true; peerInfo = null;
+      emit('status', { state:'connected' }); return 'KXRM';
+    },
+    async join(code){
+      emit('status', { state:'connecting' }); await sleep(300);
+      if(mode === 'offline'){ emit('status', { state:'idle' }); throw new Error('offline'); }
+      if(code === 'FULL'){ emit('status', { state:'idle' }); throw new Error('full'); }
+      if(code !== 'KXRM'){ emit('status', { state:'idle' }); throw new Error('notfound'); }
+      net.code = code; net.isHost = false; net.connected = true;
+      emit('status', { state:'connected' });
+      peerInfo = { role:0, at:'lobby', ch:'ch2' };          // the host is already in the room as Ах
+      emit('peer', { present:true, info:peerInfo });
+    },
+    leave(){ console.log('[net] leave'); net.connected = false; net.code = null; net.isHost = false; peerInfo = null; emit('status', { state:'idle' }); },
+    send(msg){ console.log('[net] send', JSON.stringify(msg)); },
+    on(n, f){ (h[n] = h[n] || []).push(f); },
+    off(n, f){ const a = h[n]; if(a){ const i = a.indexOf(f); if(i >= 0) a.splice(i, 1); } },
+    setInfo(o){ mine = Object.assign({}, o); console.log('[net] setInfo', JSON.stringify(mine)); },
+    peer(){ return peerInfo; },
+    // preview-only helpers
+    _peerJoin(role){ peerInfo = { role: role == null ? (mine.role === 0 ? 1 : 0) : role, at:'lobby' }; emit('peer', { present:true, info:peerInfo }); },
+    _peerLeave(){ peerInfo = null; emit('peer', { present:false, info:null }); },
+    _peerRole(r){ peerInfo = Object.assign({}, peerInfo || { at:'lobby' }, { role:r }); emit('peer', { present:true, info:peerInfo }); },
+    _error(){ emit('status', { state:'error', detail:'socket closed' }); },
+    _mine: () => mine
+  };
+  TW.net = net;
+})();
+
+// ---------- stub TW.game (engine API v2) ----------
+(function(){
+  const q = new URLSearchParams(location.search);
+  const CH = [
+    { id:'ch1', num:1, title:'Хил', unlocked:true, best:{ time:184, deaths:3 },
+      endText:'Ах дүү хоёр бие биенээ анх удаа мэдэрлээ.\nГэвч хоёр ертөнцийн хил хаалттай хэвээр…' },
+    { id:'ch2', num:2, title:'Чонын хөндий', unlocked:true, best:null,
+      endText:'Чоно хөндийд үлдлээ. Харин дүүгийн дуу улам ойртсоор.' },
+    { id:'ch3', num:3, title:'Хэрээний овоо', unlocked:false, best:null, endText:'' }
+  ];
+  const empty = q.get('empty') === '1';
+  let cur = null, paused = false, muted = false, mode = 'solo', role = null, myInfo = {};
+  let touch = q.has('touch') ? q.get('touch') === '1' : !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
+  const find = id => CH.find(c => c.id === id);
+  const pub = c => c ? { id:c.id, num:c.num, title:c.title } : null;
+  function begin(id, m, r){
+    const c = find(id) || (id === 'ch1' ? { id:'ch1', num:1, title:'Хил' } : null);
+    if(!c){ console.warn('[game] unknown chapter', id); return false; }
+    cur = c; paused = false; mode = m; role = m === 'online' ? r : null; layout();
+    TW.emit('chapterStart', Object.assign(pub(c), { mode, role }));
+    return true;
+  }
+  const myRole = () => myInfo.role === 0 || myInfo.role === 1 ? myInfo.role : (TW.net && TW.net.isHost ? 0 : 1);
+  // like the engine: remember my presence info, forward net peer events as TW 'peer'
+  if(TW.net){
+    const orig = TW.net.setInfo;
+    TW.net.setInfo = function(o){ myInfo = Object.assign({}, myInfo, o || {}); return orig.apply(TW.net, arguments); };
+    TW.net.on('peer', p => TW.emit('peer', { present: !!(p && p.present), info: p && p.info }));
+  }
+  TW.game = {
+    startChapter(id){ console.log('[game] startChapter', id, navigator.userActivation ? 'activation=' + navigator.userActivation.isActive : ''); begin(id, 'solo'); },
+    startSolo(id){ console.log('[game] startSolo', id, navigator.userActivation ? 'activation=' + navigator.userActivation.isActive : ''); begin(id, 'solo'); },
+    startOnline(id){
+      console.log('[game] startOnline', id);
+      if(!TW.net || !TW.net.connected) return false;
+      const r = myRole(); TW.net.send({ t:'start', chapter:id, seed:12345 });
+      begin(id, 'online', r); TW.emit('onlineStart', { chapter:id, role:r }); return true;
+    },
+    _guestStart(id){ const r = myRole(); begin(id, 'online', r); TW.emit('onlineStart', { chapter:id, role:r }); },
+    mode(){ return mode; },
+    role(){ return role; },
+    leaveOnline(){ console.log('[game] leaveOnline'); try{ TW.net && TW.net.leave(); }catch(e){} mode = 'solo'; role = null; cur = null; paused = false; layout(); },
+    restart(){ console.log('[game] restart'); if(cur){ paused = false; TW.emit('chapterStart', Object.assign(pub(cur), { mode, role })); } },
+    pause(b){ b = !!b; if(!cur) b = false; console.log('[game] pause', b); if(b === paused) return; paused = b; TW.emit('pause', { paused:b }); },
+    isPaused(){ return paused; },
+    setMuted(b){ muted = !!b; console.log('[game] setMuted', muted); },
+    isMuted(){ return muted; },
+    chapters(){ return empty ? [] : CH.map(c => ({ id:c.id, num:c.num, title:c.title, unlocked:c.unlocked, best:c.best })); },
+    current(){ return pub(cur); },
+    touchUI(){ return touch; },
+    _setTouch(v){ touch = v; layout(); },
+    _set(id){ cur = find(id); },
+    _CH: CH
+  };
+})();
+
+// ---------- fake game picture: ONE world fills the landscape screen ----------
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d'), ctl = document.getElementById('controls');
+function place(id, o){ const e = document.getElementById(id); Object.assign(e.style, { width:o.w+'px', height:o.h+'px', bottom:o.b+'px', left:o.l!=null?o.l+'px':'auto', right:o.r!=null?o.r+'px':'auto' }); }
+function hill(w, base, amp, seed, col, h){
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, h);
+  for(let x = 0; x <= w + 10; x += 10){ const n = Math.sin(x*0.011+seed)*0.5 + Math.sin(x*0.027+seed*2)*0.3; ctx.lineTo(x, base - amp*(0.5+0.5*n)); }
+  ctx.lineTo(w, h); ctx.closePath(); ctx.fill();
+}
+function layout(){
+  const VW = innerWidth, VH = innerHeight, touch = TW.game.touchUI(), DPR = Math.min(devicePixelRatio || 1, 2);
+  cv.width = VW * DPR; cv.height = VH * DPR; cv.style.width = VW + 'px'; cv.style.height = VH + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const dead = TW.game.role() === 1, gy = VH * 0.79, s = VH / 240;
+  let g = ctx.createLinearGradient(0, 0, 0, VH);
+  if(!dead){
+    g.addColorStop(0, '#13110f'); g.addColorStop(.5, '#3d382f'); g.addColorStop(.75, '#8c816b'); g.addColorStop(1, '#a3967b');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    const r = ctx.createRadialGradient(VW*.32, VH*.55, 0, VW*.32, VH*.55, VH*.7); r.addColorStop(0, 'rgba(240,226,192,.45)'); r.addColorStop(1, 'rgba(240,226,192,0)');
+    ctx.fillStyle = r; ctx.fillRect(0, 0, VW, VH);
+    hill(VW, gy - VH*.16, VH*.2, 1.3, '#857b66', VH); hill(VW, gy - VH*.07, VH*.14, 2.9, '#5a5346', VH); hill(VW, gy, VH*.08, 5.1, '#302c25', VH);
+    ctx.fillStyle = '#0b0a09'; ctx.fillRect(0, gy, VW, VH - gy);
+    ctx.fillRect(VW*.42, gy - 30*s, 9*s, 22*s); ctx.beginPath(); ctx.arc(VW*.42 + 4.5*s, gy - 34*s, 5.5*s, 0, 7); ctx.fill();
+  }else{
+    g.addColorStop(0, '#000'); g.addColorStop(.6, '#06070a'); g.addColorStop(.85, '#181c24'); g.addColorStop(1, '#252a34');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    hill(VW, gy - VH*.16, VH*.2, 4.2, '#101319', VH); hill(VW, gy - VH*.07, VH*.14, 7.7, '#1d2129', VH); hill(VW, gy, VH*.08, 1.9, '#3a404b', VH);
+    ctx.fillStyle = '#c2c7cf'; ctx.fillRect(0, gy, VW, VH - gy);
+    ctx.fillStyle = '#eef0f3'; ctx.fillRect(VW*.42, gy - 18*s, 8*s, 14*s); ctx.beginPath(); ctx.arc(VW*.42 + 4*s, gy - 22*s, 4.5*s, 0, 7); ctx.fill();
+    ctx.fillStyle = '#c8262d'; ctx.fillRect(VW*.42 - 5*s, gy - 26*s, 5*s, 2*s);
+  }
+  ctx.font = '600 10px system-ui,sans-serif'; ctx.textBaseline = 'top'; ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.fillText(dead ? 'ДҮҮ · ҮХЭГСДИЙН ЕРТӨНЦ' : 'АХ · АМЬД ЕРТӨНЦ', 12, 12);
+  // touch controls float over the landscape picture (no bar)
+  ctl.style.display = touch ? 'block' : 'none';
+  place('pad', { l:18, b:16, w:176, h:70 }); place('bJump', { r:18, b:16, w:78, h:78 }); place('bAction', { r:106, b:12, w:58, h:58 }); place('bSwitch', { r:24, b:106, w:50, h:50 });
+}
+addEventListener('resize', layout);
+layout();
+
+// ---------- debug strip ----------
+const ch = id => TW.game._CH.find(c => c.id === id);
+const DBG = {
+  start2(){ TW.game._set('ch2'); TW.emit('chapterStart', { id:'ch2', num:2, title:'Чонын хөндий', mode:TW.game.mode(), role:TW.game.role() }); },
+  end1(){ const c = ch('ch1'); TW.game._set('ch1'); TW.emit('chapterEnd', { id:c.id, num:c.num, title:c.title, endText:c.endText, next:'ch2', time:184.6, deaths:3 }); },
+  end2(){ const c = ch('ch2'); TW.game._set('ch2'); TW.emit('chapterEnd', { id:c.id, num:c.num, title:c.title, endText:c.endText, next:null, time:427.2, deaths:11 }); },
+  pauseOn(){ TW.game.pause(true); },
+  touch(){ TW.game._setTouch(!TW.game.touchUI()); },
+  peerJoin(){ TW.net && TW.net._peerJoin(); },
+  peerLeave(){ TW.net && TW.net._peerLeave(); },
+  peerRole0(){ TW.net && TW.net._peerRole(0); },
+  peerRole1(){ TW.net && TW.net._peerRole(1); },
+  hostStarts(){ TW.game._guestStart('ch2'); },
+  peerMenu(){ TW.emit('peerMenu', {}); },
+  netError(){ TW.net && TW.net._error(); }
+};
+document.getElementById('dbg').addEventListener('click', e => { const b = e.target.closest('[data-d]'); if(b){ DBG[b.dataset.d](); b.blur(); } });
+window.__dbg = DBG;
+</script>
+<script src="js/ui.js"></script>
+<script>TW.ui.init(TW.game);</script>
+</body>
+</html>

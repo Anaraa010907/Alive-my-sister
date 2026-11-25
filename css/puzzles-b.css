@@ -1,0 +1,195 @@
+/* Хоёр ертөнц — puzzle kinds B (shagai, riddle, split). Every class is prefixed .twpzb-
+   Reuses designer A's --twpz-* variables when css/puzzles.css is loaded, with the same fallback values.
+   Laid out for the engine's overlay body (≈780×290 on an 844×390 landscape phone); shrinks for smaller phones. */
+.twpzb-root{
+  --twpzb-bg:var(--twpz-bg,#0d0c0b);
+  --twpzb-ink:var(--twpz-ink,#efe9dc);
+  --twpzb-red:var(--twpz-red,#d0343a);
+  --twpzb-blue:var(--twpz-blue,#7fa7e6);
+  --twpzb-serif:var(--twpz-serif,Georgia,"Times New Roman","Noto Serif","DejaVu Serif",serif);
+  --twpzb-sans:var(--twpz-sans,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif);
+  --twpzb-dim:rgba(239,233,220,.62);
+  --twpzb-line:rgba(239,233,220,.2);
+  --twpzb-soft:rgba(239,233,220,.1);
+  --twpzb-bone:#e6dcc6;
+  position:relative;box-sizing:border-box;width:100%;height:100%;min-height:0;
+  display:flex;flex-direction:column;gap:8px;overflow:hidden;
+  color:var(--twpzb-ink);font-family:var(--twpzb-sans);font-size:14px;line-height:1.35;text-align:left;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
+}
+.twpzb-root *,.twpzb-root *::before,.twpzb-root *::after{box-sizing:border-box}
+.twpzb-root p{margin:0}
+
+/* ---------- type ---------- */
+.twpzb-head{flex:none;display:flex;align-items:baseline;gap:16px;min-width:0}
+.twpzb-say{flex:none;font-family:var(--twpzb-serif);font-weight:400;font-size:20px;line-height:1.2;letter-spacing:.06em;color:var(--twpzb-ink);white-space:nowrap}
+.twpzb-hint{flex:1 1 auto;min-width:0;font-size:13px;line-height:1.35;color:var(--twpzb-dim)}
+.twpzb-note{font-size:12.5px;line-height:1.3;color:var(--twpzb-dim)}
+.twpzb-cap{flex:none;font-family:var(--twpzb-serif);font-size:13px;letter-spacing:.12em;color:var(--twpzb-dim);text-align:center}
+.twpzb-num{font-family:var(--twpzb-serif);font-size:13px;line-height:1;color:var(--twpzb-dim)}
+.twpzb-lbl{font-family:var(--twpzb-serif);font-size:17px;line-height:1.1;letter-spacing:.04em;color:var(--twpzb-ink)}
+
+/* ---------- buttons ---------- */
+.twpzb-root button{
+  -webkit-appearance:none;appearance:none;margin:0;font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;
+  transition:background-color .15s,border-color .15s,transform .08s,opacity .15s;
+}
+.twpzb-root button:focus:not(:focus-visible){outline:none}
+.twpzb-root button:focus-visible{outline:2px solid var(--twpzb-ink);outline-offset:2px}
+.twpzb-root button:disabled{cursor:default}
+.twpzb-go{
+  flex:none;min-height:46px;min-width:132px;padding:0 28px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.09);color:#f4f0e6!important;
+  font-family:var(--twpzb-sans);font-size:16px;letter-spacing:.12em;
+}
+.twpzb-go:active:not(:disabled){transform:scale(.97);background:rgba(255,255,255,.18)}
+.twpzb-go:disabled{opacity:.35}
+.twpzb-ghost{
+  flex:none;min-height:46px;min-width:96px;padding:0 16px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.18);background:transparent;color:rgba(239,233,220,.82)!important;font-size:14px;letter-spacing:.06em;
+}
+.twpzb-ghost:active:not(:disabled){background:rgba(255,255,255,.1)}
+.twpzb-ghost:disabled{opacity:.35}
+@media (hover:hover){
+  .twpzb-go:hover:not(:disabled){background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.7)}
+  .twpzb-bone:hover:not(:disabled),.twpzb-key:hover:not(:disabled),.twpzb-step:hover:not(:disabled){background:rgba(255,255,255,.08)}
+}
+
+/* ---------- result states ---------- */
+.twpzb-is-ok .twpzb-mat,.twpzb-is-ok .twpzb-dial,.twpzb-is-ok .twpzb-theirs{border-color:rgba(250,238,210,.75);box-shadow:0 0 0 1px rgba(250,238,210,.25),0 0 26px rgba(250,238,210,.18)}
+.twpzb-is-bad .twpzb-mat,.twpzb-is-bad .twpzb-dial,.twpzb-is-bad .twpzb-theirs{border-color:var(--twpzb-red);box-shadow:0 0 0 1px rgba(208,52,58,.35)}
+
+/* ================= SHAGAI ================= */
+.twpzb-mat{
+  position:relative;flex:1 1 auto;min-height:0;display:flex;justify-content:center;align-items:stretch;gap:14px;
+  padding:12px 18px;border:1px solid var(--twpzb-line);border-radius:16px;
+  background:radial-gradient(ellipse at 50% 40%,rgba(239,233,220,.06),rgba(239,233,220,0) 70%),rgba(255,255,255,.02);
+}
+.twpzb-mat::before{content:"";position:absolute;top:5px;right:5px;bottom:5px;left:5px;border:1px dashed rgba(239,233,220,.12);border-radius:12px;pointer-events:none}
+.twpzb-bone{
+  position:relative;flex:1 1 0;min-width:56px;max-width:156px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:2px;
+  padding:7px 4px 8px;border-radius:12px;border:1px solid transparent;background:transparent;
+}
+button.twpzb-bone{border-color:rgba(239,233,220,.16);background:rgba(255,255,255,.035)}
+button.twpzb-bone:active:not(:disabled){background:rgba(255,255,255,.1);transform:scale(.98)}
+.twpzb-bonesvg{flex:1 1 0;min-height:0;width:100%;max-height:124px;overflow:visible}
+.twpzb-b-sh{fill:rgba(0,0,0,.45)}
+.twpzb-b-o{fill:var(--twpzb-bone);stroke:#5c5344;stroke-width:2.5;stroke-linejoin:round}
+.twpzb-b-h{fill:#a99d83}
+.twpzb-b-d{fill:none;stroke:#7a6f5a;stroke-width:3;stroke-linecap:round}
+.twpzb-is-ok .twpzb-b-o{fill:#fbf4e2}
+.twpzb-foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:46px}
+.twpzb-shagai.twpzb-clue .twpzb-foot{justify-content:center}
+.twpzb-shagai.twpzb-clue .twpzb-lbl{font-size:19px}
+
+/* ================= RIDDLE ================= */
+.twpzb-rid{flex:1 1 auto;min-height:0;display:flex;gap:16px;align-items:stretch}
+.twpzb-stones{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px;padding:10px 14px 12px;border:1px solid var(--twpzb-line);border-radius:16px;background:rgba(255,255,255,.02)}
+.twpzb-stonerow{flex:1 1 auto;min-height:0;display:flex;justify-content:space-around;align-items:center;gap:10px}
+.twpzb-stonebox{display:flex;flex-direction:column;align-items:center;gap:7px}
+.twpzb-stone{
+  width:96px;height:78px;
+  background:radial-gradient(circle at 34% 30%,var(--sh) 0,var(--sf) 46%,var(--sf) 68%,rgba(0,0,0,.55) 120%);
+  box-shadow:inset 0 -6px 12px rgba(0,0,0,.35),0 7px 0 -3px rgba(0,0,0,.5),0 0 0 1px rgba(239,233,220,.22);
+}
+.twpzb-stone[data-c="0"]{box-shadow:inset 0 -6px 12px rgba(0,0,0,.35),0 7px 0 -3px rgba(0,0,0,.5),0 0 0 1px rgba(239,233,220,.45)}
+.twpzb-dial{flex:0 0 252px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:6px;padding:8px 10px 10px;border:1px solid var(--twpzb-line);border-radius:16px}
+.twpzb-wheels{display:flex;gap:14px}
+.twpzb-wheel{display:flex;flex-direction:column;align-items:center;gap:4px}
+.twpzb-step{width:70px;height:44px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:10px;border:1px solid rgba(239,233,220,.2);background:rgba(255,255,255,.04)}
+.twpzb-step:active:not(:disabled){background:rgba(255,255,255,.14);transform:scale(.97)}
+.twpzb-chev{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.twpzb-digit{
+  width:70px;height:58px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--twpzb-serif);font-size:42px;line-height:1;color:var(--twpzb-ink);
+  border:1px solid rgba(239,233,220,.32);border-radius:10px;background:rgba(0,0,0,.35);box-shadow:inset 0 2px 8px rgba(0,0,0,.6);
+}
+.twpzb-is-ok .twpzb-digit{border-color:rgba(250,238,210,.8)}
+/* clue: rules carved on a stele */
+.twpzb-tables{flex:1 1 auto;min-height:0;display:flex;gap:14px}
+.twpzb-table{
+  flex:1 1 0;min-width:0;display:flex;flex-direction:column;padding:6px 12px 6px;border:1px solid var(--twpzb-line);border-radius:14px 14px 6px 6px;
+  background:linear-gradient(rgba(239,233,220,.05),rgba(239,233,220,.015));
+}
+.twpzb-tcap{flex:none;padding:2px 0 5px;font-family:var(--twpzb-serif);font-size:14px;letter-spacing:.14em;color:var(--twpzb-dim);text-align:center;border-bottom:1px solid var(--twpzb-line)}
+.twpzb-rule{flex:1 1 0;min-height:0;display:flex;align-items:center;gap:8px;padding:2px 0;border-bottom:1px solid var(--twpzb-soft);font-size:14px;line-height:1.3}
+.twpzb-rule:last-child{border-bottom:0}
+.twpzb-else .twpzb-cond{font-style:italic;color:var(--twpzb-dim)}
+.twpzb-cond{flex:1 1 auto;min-width:0}
+.twpzb-cw{white-space:nowrap;font-weight:600;color:#fff}
+.twpzb-cw::before{content:"";display:inline-block;width:.72em;height:.72em;margin:0 .28em .02em 0;border-radius:50%;background:var(--sw);box-shadow:0 0 0 1px rgba(239,233,220,.5);vertical-align:baseline}
+.twpzb-arrow{flex:none;color:var(--twpzb-dim)}
+.twpzb-dig{flex:none;width:26px;text-align:center;font-family:var(--twpzb-serif);font-size:23px;line-height:1;color:var(--twpzb-ink)}
+
+/* ================= SPLIT ================= */
+.twpzb-sp{flex:1 1 auto;min-height:0;display:flex;gap:16px;align-items:stretch}
+.twpzb-mine,.twpzb-theirs{display:flex;flex-direction:column;gap:8px;padding:10px 14px 12px;border:1px solid var(--twpzb-line);border-radius:16px}
+.twpzb-mine{flex:0 0 252px;background:radial-gradient(ellipse at 50% 55%,rgba(250,238,210,.07),rgba(250,238,210,0) 70%)}
+.twpzb-theirs{flex:1 1 auto;min-width:0}
+.twpzb-split .twpzb-say{font-size:18px;white-space:normal}
+.twpzb-tiles{flex:1 1 auto;min-height:0;display:flex;justify-content:center;align-items:center;gap:14px}
+.twpzb-tile{position:relative;width:98px;height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:12px;border:1px solid rgba(250,238,210,.4);background:rgba(250,238,210,.05)}
+.twpzb-tile .twpzb-num,.twpzb-slot .twpzb-num{position:absolute;top:6px;left:8px}
+.twpzb-tile .twpzb-sym{width:72px;height:72px;margin-top:8px}
+.twpzb-sym{display:block;fill:none;stroke:currentColor;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;color:var(--twpzb-ink)}
+.twpzb-slotrow{flex:none;display:flex;align-items:center;gap:10px}
+.twpzb-slot{position:relative;width:64px;height:60px;flex:none;display:flex;align-items:center;justify-content:center;padding:0;border-radius:10px;border:1px dashed rgba(239,233,220,.4);background:rgba(0,0,0,.3)}
+.twpzb-slot.twpzb-full{border-style:solid;border-color:rgba(239,233,220,.6)}
+.twpzb-slot .twpzb-sym{width:40px;height:40px;margin-left:6px}
+.twpzb-acts{margin-left:auto;display:flex;gap:10px}
+.twpzb-keys{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(48px,1fr);gap:8px}
+.twpzb-key{display:flex;align-items:center;justify-content:center;padding:0;border-radius:10px;border:1px solid rgba(239,233,220,.2);background:rgba(255,255,255,.04)}
+.twpzb-key:active:not(:disabled){background:rgba(255,255,255,.14);transform:scale(.97)}
+.twpzb-key .twpzb-sym{width:46px;height:46px}
+.twpzb-clue .twpzb-key,.twpzb-clue .twpzb-slot{opacity:.35}
+.twpzb-split.twpzb-clue .twpzb-theirs .twpzb-note{flex:none;text-align:center}
+
+/* ---------- smaller landscape phones (body below ≈ 270 tall / 700 wide) ---------- */
+@media (max-height:370px){
+  .twpzb-root{gap:6px}
+  .twpzb-say{font-size:18px}
+  .twpzb-hint{font-size:12px}
+  .twpzb-mat{padding:8px 12px}
+  .twpzb-stone{width:82px;height:66px}
+  .twpzb-digit{height:50px;font-size:36px}
+  .twpzb-dial{padding:6px 10px 8px}
+  .twpzb-tile{width:86px;height:96px}
+  .twpzb-tile .twpzb-sym{width:62px;height:62px}
+  .twpzb-slot{height:52px}
+  .twpzb-mine,.twpzb-theirs{padding:8px 12px 10px;gap:6px}
+  .twpzb-rule{font-size:13px}
+}
+@media (max-height:330px){
+  .twpzb-stone{width:68px;height:54px}
+  .twpzb-stonebox{gap:4px}
+  .twpzb-digit{height:44px;font-size:32px}
+  .twpzb-wheel{gap:3px}
+  .twpzb-lbl{font-size:15px}
+  .twpzb-tile{width:76px;height:84px}
+  .twpzb-tile .twpzb-sym{width:52px;height:52px}
+  .twpzb-keys{grid-auto-rows:minmax(44px,1fr);gap:6px}
+  .twpzb-rule{font-size:12px}
+  .twpzb-dig{font-size:19px}
+  .twpzb-key .twpzb-sym{width:36px;height:36px}
+  /* very short bodies: the dial lies on its side, Батлах beside the wheels */
+  .twpzb-dial{flex-direction:row;flex-basis:276px;justify-content:center;gap:12px}
+  .twpzb-dial .twpzb-cap{display:none}
+  .twpzb-dial .twpzb-go{min-width:0;padding:0 16px}
+}
+@media (max-width:700px){
+  .twpzb-dial{flex-basis:216px}
+  .twpzb-mine{flex-basis:200px}
+  .twpzb-tiles{gap:10px}
+  .twpzb-slot{width:56px}
+  .twpzb-slotrow,.twpzb-acts{gap:8px}
+  .twpzb-wheels{gap:10px}
+  .twpzb-step,.twpzb-digit{width:62px}
+  .twpzb-head{gap:10px}
+  .twpzb-tables{gap:10px}
+  .twpzb-table{padding:5px 9px}
+  .twpzb-go{min-width:0;padding:0 16px;letter-spacing:.08em}
+  .twpzb-ghost{min-width:0;padding:0 12px}
+}
+@media (prefers-reduced-motion:reduce){
+  .twpzb-root button{transition:none}
+}

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="icon" href="data:,">
+<title>Хоёр ертөнц — оньсого B (шагай, өнгөт чулуу, хоёр хагас)</title>
+<!-- designer A's base look (optional: the page works without it) -->
+<link rel="stylesheet" href="css/puzzles.css">
+<link rel="stylesheet" href="css/puzzles-b.css">
+<style>
+html,body{margin:0;background:#050505;color:#e8e4da;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px}
+body{padding:14px 16px 40px;box-sizing:border-box}
+h1{font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing:.18em;font-size:22px;margin:0 0 4px;color:#efe9dc}
+.pv-sub{opacity:.6;margin:0 0 14px;font-size:12.5px}
+.pv-bar0{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px}
+.pv-bar0 label{opacity:.7;font-size:12px}
+.pv-bar0 input{width:110px;background:#111;border:1px solid #333;color:#eee;border-radius:6px;padding:6px 8px;font:inherit}
+.pv-btn{-webkit-appearance:none;appearance:none;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.06);color:#f4f0e6;font:inherit;font-size:13px;cursor:pointer}
+.pv-btn:hover{background:rgba(255,255,255,.12)}
+.pv-kind{border-top:1px solid #1d1c1a;padding:12px 0 6px}
+.pv-kind h2{font-family:Georgia,serif;font-weight:400;font-size:17px;letter-spacing:.1em;margin:0 0 8px;color:#efe9dc}
+.pv-kind h2 small{font-family:system-ui,sans-serif;font-size:11px;letter-spacing:0;opacity:.5;margin-left:8px}
+.pv-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+.pv-cvs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pv-cvs figure{margin:0}
+.pv-cvs canvas{display:block;width:100%;aspect-ratio:300/92;border:1px solid #1d1c1a;border-radius:4px}
+.pv-cvs figcaption{font-size:11px;opacity:.5;margin-top:3px}
+.pv-other{opacity:.8}
+/* ---- overlay frame shaped like the engine's #twpz ---- */
+.pv-ov{position:fixed;top:0;right:0;bottom:0;left:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72)}
+.pv-ov[hidden]{display:none}
+.pv-frames{display:flex;gap:12px;align-items:center;justify-content:center}
+.pv-scale{position:relative;flex:none}
+.pv-frame{
+  position:relative;box-sizing:border-box;width:min(844px,100vw);height:min(390px,100vh);
+  background:var(--twpz-bg,#0d0c0b);color:var(--twpz-ink,#efe9dc);
+  border:1px solid rgba(239,233,220,.14);border-radius:10px;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.pv-dual .pv-frame{position:absolute;top:0;left:0;width:844px;height:390px;transform-origin:0 0}
+.pv-tbar{height:44px;display:flex;align-items:center;gap:12px;padding:0 6px 0 32px;border-bottom:1px solid rgba(239,233,220,.1)}
+.pv-t{font-family:Georgia,"Times New Roman",serif;font-size:17px;letter-spacing:.16em;color:var(--twpz-ink,#efe9dc)}
+.pv-w{font-size:11px;letter-spacing:.06em;opacity:.45}
+.pv-x{margin-left:auto;width:44px;height:44px;border:0;background:transparent;color:rgba(239,233,220,.8);font-size:20px;cursor:pointer;border-radius:8px}
+.pv-x:hover{background:rgba(255,255,255,.08)}
+.pv-body{position:relative;width:calc(100% - 64px);height:calc(100% - 100px);margin:6px auto 0}
+.pv-dbg{position:absolute;left:32px;right:32px;bottom:5px;font:10px/1.3 ui-monospace,Menlo,Consolas,monospace;color:rgba(239,233,220,.38);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-log{position:fixed;right:8px;bottom:6px;z-index:30;font:11px ui-monospace,Menlo,monospace;color:rgba(239,233,220,.55);pointer-events:none}
+</style>
+</head>
+<body>
+<h1>ОНЬСОГО B</h1>
+<p class="pv-sub">шагай · өнгөт чулуу · хоёр хагас — drawDevice / drawClue in both palettes, solve / showClue in an engine-shaped frame (844×390, body ≈ 780×290). Answers are printed in tiny debug text.</p>
+<div class="pv-bar0">
+  <label for="pvSeed">seed</label><input id="pvSeed" value="20261126" inputmode="numeric">
+  <button class="pv-btn" id="pvNew" type="button">шинэ seed</button>
+</div>
+<div id="pvKinds"></div>
+<div class="pv-kind pv-other" id="pvOther" hidden><h2>Бусад төрөл <small>(designer A, if js/puzzles.js is present)</small></h2><div class="pv-row" id="pvOtherRow"></div></div>
+<div class="pv-ov" id="pvOv" hidden><div class="pv-frames" id="pvFrames"></div></div>
+<div class="pv-log" id="pvLog"></div>
+
+<script>
+// ---- stub TW (only what puzzle modules may touch) ----
+(function(){
+  if (window.TW) return;
+  var ev = {};
+  window.TW = {
+    H: 240, G: 190, DEATH_Y: 330, chapters: {}, chapterOrder: [], enemyTypes: {}, enemyArt: {}, envArt: {}, sfxExt: {}, music: {}, ui: null, game: null,
+    on: function(n, f){ (ev[n] = ev[n] || []).push(f); },
+    off: function(n, f){ if (ev[n]) ev[n] = ev[n].filter(function(x){ return x !== f; }); },
+    emit: function(n, d){ (ev[n] || []).slice().forEach(function(f){ try { f(d); } catch (e){ console.error(e); } }); }
+  };
+})();
+</script>
+<script src="js/puzzles.js"></script>
+<script src="js/puzzles-b.js"></script>
+<script>
+(function(){
+'use strict';
+var TW = window.TW, G = TW.G;
+function rng(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hashStr(s){ var h = 2166136261; for (var i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h >>> 0; }
+var PAL = [
+  {world:0, sil:'#0b0a09', rim:'rgba(160,145,120,0.25)', eye:'#f3efe4', pale:'#c2c7cf', red:'#c8262d', blue:'#467dcd'},
+  {world:1, sil:'#05060a', rim:'rgba(210,218,232,0.35)', eye:'#eef0f3', pale:'#c2c7cf', red:'#c8262d', blue:'#467dcd'}
+];
+var MINE = ['shagai', 'riddle', 'split'];
+var NOTES = {shagai: '4 шагай · 4⁴ = 256', riddle: '3 чулуу → 2 цифр · 1/100', split: '2 тал · тал бүр 8² = 64'};
+var seedEl = document.getElementById('pvSeed');
+function seed(){ return (parseInt(seedEl.value, 10) || 0) >>> 0; }
+// engine-like seeding: session seed + puzzle id (split: + params.pair so both halves match)
+function objFor(kind, side){
+  return kind === 'split' ? {id: 'SP' + (side ? 'B' : 'A'), type: 'puzzle', world: side ? 1 : 0, x: 0, kind: kind, params: {pair: 'P1', side: side ? 1 : 0}}
+                          : {id: 'PZ_' + kind, type: 'puzzle', world: 0, x: 0, kind: kind, params: {}};
+}
+function seedKey(kind, o){ var T = TW.puzzles[kind]; return T && T.seedKey ? T.seedKey(o) : o.id; }
+function genFor(kind, s, side){
+  var T = TW.puzzles[kind], o = objFor(kind, side);
+  return T.gen(rng(hashStr(String(s) + ':' + seedKey(kind, o))), o.params);
+}
+function answerOf(kind, d){
+  var T = TW.puzzles[kind];
+  try { return T.answerText ? T.answerText(d) : JSON.stringify(d); } catch (e){ return '?'; }
+}
+
+// ---- in-world canvases ----
+var cvs = [];
+function backdrop(ctx, w, W){
+  var g = ctx.createLinearGradient(0, 110, 0, 200);
+  if (w === 0){ g.addColorStop(0, '#3d382f'); g.addColorStop(0.7, '#8c816b'); g.addColorStop(1, '#a3967b'); }
+  else { g.addColorStop(0, '#06070a'); g.addColorStop(0.7, '#181c24'); g.addColorStop(1, '#252a34'); }
+  ctx.fillStyle = g; ctx.fillRect(0, 100, W, 120);
+  ctx.fillStyle = w ? '#c2c7cf' : '#0b0a09'; ctx.fillRect(0, G, W, 40);
+  if (w){ ctx.fillStyle = '#e2e5ea'; ctx.fillRect(0, G, W, 1); }
+}
+function drawCanvas(c){
+  var cv = c.cv, dpr = window.devicePixelRatio || 1, W = 300, top = 116, Hh = 92;
+  var pw = Math.max(1, Math.round(cv.clientWidth * dpr)), ph = Math.max(1, Math.round(cv.clientWidth * Hh / W * dpr));
+  if (cv.width !== pw || cv.height !== ph){ cv.width = pw; cv.height = ph; }
+  var ctx = cv.getContext('2d'), s = pw / W, t = performance.now() / 1000, T = TW.puzzles[c.kind];
+  ctx.setTransform(s, 0, 0, s, 0, -top * s);
+  backdrop(ctx, c.w, W);
+  var data = c.data;
+  T.drawDevice(ctx, {x: 55, kind: c.kind}, t, PAL[c.w], false);
+  T.drawDevice(ctx, {x: 150, kind: c.kind}, t, PAL[c.w], true);
+  T.drawClue(ctx, {x: 245, puzzle: 'PZ'}, data, t, PAL[c.w]);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.font = (10 * dpr) + 'px system-ui,sans-serif'; ctx.fillStyle = c.w ? 'rgba(20,24,32,.7)' : 'rgba(200,190,170,.55)'; ctx.textAlign = 'center';
+  [['төхөөрөмж', 55], ['шийдсэн', 150], ['сэжүүр', 245]].forEach(function(l){ ctx.fillText(l[0], l[1] * s, (G + 14 - top) * s); });
+}
+function frameLoop(){ cvs.forEach(drawCanvas); requestAnimationFrame(frameLoop); }
+
+function build(){
+  var host = document.getElementById('pvKinds'); host.innerHTML = ''; cvs = [];
+  MINE.forEach(function(kind){
+    var T = TW.puzzles[kind]; if (!T) return;
+    var sec = document.createElement('section'); sec.className = 'pv-kind'; sec.id = 'pv-' + kind;
+    sec.innerHTML = '<h2>' + T.title + ' <small>' + kind + ' · ' + NOTES[kind] + '</small></h2>';
+    var row = document.createElement('div'); row.className = 'pv-row';
+    var acts = kind === 'split'
+      ? [['Тал 0: шийдэх', 'solve', 0], ['Тал 1: шийдэх', 'solve', 1], ['Хоёр тал зэрэг', 'dual', 0], ['Тал 0: харах (clue)', 'clue', 0]]
+      : [['Шийдэх (solve)', 'solve', 0], ['Сэжүүр (showClue)', 'clue', 0]];
+    acts.forEach(function(a){
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'pv-btn'; b.textContent = a[0];
+      b.setAttribute('data-open', kind + ':' + a[1] + ':' + a[2]);
+      b.addEventListener('click', function(){ a[1] === 'dual' ? openDual(kind) : open(kind, a[1], {side: a[2]}); });
+      row.appendChild(b);
+    });
+    sec.appendChild(row);
+    var grid = document.createElement('div'); grid.className = 'pv-cvs';
+    [0, 1].forEach(function(w){
+      var f = document.createElement('figure'), cv = document.createElement('canvas');
+      cv.id = 'cv-' + kind + '-' + w;
+      f.appendChild(cv);
+      var cap = document.createElement('figcaption'); cap.textContent = (w ? 'world 1 — үхэгсдийн ертөнц' : 'world 0 — амьд ертөнц') + (kind === 'split' ? ' (тал ' + w + ')' : '');
+      f.appendChild(cap); grid.appendChild(f);
+      cvs.push({cv: cv, kind: kind, w: w, data: genFor(kind, seed(), w)});
+    });
+    sec.appendChild(grid); host.appendChild(sec);
+  });
+  var others = Object.keys(TW.puzzles).filter(function(k){ return MINE.indexOf(k) < 0 && TW.puzzles[k] && TW.puzzles[k].solve; });
+  var orow = document.getElementById('pvOtherRow'); orow.innerHTML = '';
+  document.getElementById('pvOther').hidden = !others.length;
+  others.forEach(function(kind){
+    ['solve', 'clue'].forEach(function(m){
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'pv-btn';
+      b.textContent = (TW.puzzles[kind].title || kind) + ': ' + (m === 'solve' ? 'шийдэх' : 'сэжүүр');
+      b.addEventListener('click', function(){ open(kind, m, {}); }); orow.appendChild(b);
+    });
+  });
+}
+
+// ---- overlay (engine-shaped) ----
+var ov = document.getElementById('pvOv'), framesEl = document.getElementById('pvFrames'), logEl = document.getElementById('pvLog');
+var state = {calls: [], cleanups: [], data: [], autoClose: true, timer: 0};
+function log(s){ logEl.textContent = s; }
+function makeFrame(kind, mode, side, data, sd){
+  var T = TW.puzzles[kind];
+  var fr = document.createElement('div'); fr.className = 'pv-frame'; fr.setAttribute('data-side', String(side || 0));
+  var bar = document.createElement('div'); bar.className = 'pv-tbar';
+  bar.innerHTML = '<span class="pv-t"></span><span class="pv-w"></span><button class="pv-x" type="button" aria-label="Хаах">&#x2715;</button>';
+  bar.querySelector('.pv-t').textContent = T.title || kind;
+  bar.querySelector('.pv-w').textContent = (mode === 'solve' ? 'төхөөрөмж' : 'сэжүүр') + (kind === 'split' ? ' · тал ' + (side || 0) : '');
+  bar.querySelector('.pv-x').addEventListener('click', close);
+  var body = document.createElement('div'); body.className = 'pv-body';
+  var dbg = document.createElement('div'); dbg.className = 'pv-dbg';
+  dbg.textContent = 'seed ' + sd + ' · зөв: ' + answerOf(kind, data);
+  fr.appendChild(bar); fr.appendChild(body); fr.appendChild(dbg);
+  var idx = state.data.length;
+  var api = {
+    success: function(){ state.calls.push({i: idx, side: side || 0, r: 'success'}); log('success ' + state.calls.length); done(); },
+    fail: function(){ state.calls.push({i: idx, side: side || 0, r: 'fail'}); log('fail ' + state.calls.length); done(); },
+    close: function(){ state.calls.push({i: idx, side: side || 0, r: 'close'}); close(); }
+  };
+  var fn = mode === 'solve' ? T.solve : T.showClue;
+  var cleanup = fn.call(T, body, data, api);
+  state.cleanups.push(cleanup);
+  state.data.push(data);
+  return fr;
+}
+function done(){
+  if (!state.autoClose) return;
+  clearTimeout(state.timer);
+  state.timer = setTimeout(function(){ if (!framesEl.querySelector('.twpzb-root:not([data-result])')) close(); }, 900);
+}
+function reset(){
+  clearTimeout(state.timer);
+  state.cleanups.forEach(function(f){ if (typeof f === 'function') try { f(); } catch (e){ console.error(e); } });
+  state.cleanups = []; state.data = []; state.calls = [];
+  framesEl.innerHTML = ''; framesEl.className = 'pv-frames';
+}
+function open(kind, mode, opts){
+  opts = opts || {}; reset();
+  var side = opts.side ? 1 : 0, sd = opts.seed != null ? opts.seed : seed(), data = opts.data || genFor(kind, sd, side);
+  framesEl.appendChild(makeFrame(kind, mode, side, data, sd));
+  ov.hidden = false; log('');
+  return data;
+}
+function openDual(kind, opts){
+  opts = opts || {}; reset();
+  framesEl.className = 'pv-frames pv-dual';
+  var s = Math.min(1, (window.innerWidth - 24) / (844 * 2 + 12), (window.innerHeight - 24) / 390);
+  [0, 1].forEach(function(side){
+    var wrap = document.createElement('div'); wrap.className = 'pv-scale';
+    wrap.style.width = (844 * s) + 'px'; wrap.style.height = (390 * s) + 'px';
+    var sd = opts.seed != null ? opts.seed : seed();
+    var fr = makeFrame(kind, 'solve', side, genFor(kind, sd, side), sd);
+    fr.style.transform = 'scale(' + s + ')';
+    wrap.appendChild(fr); framesEl.appendChild(wrap);
+  });
+  ov.hidden = false; log('');
+  return state.data.slice();
+}
+function close(){ reset(); ov.hidden = true; }
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+seedEl.addEventListener('change', build);
+document.getElementById('pvNew').addEventListener('click', function(){ seedEl.value = String((Math.random() * 1e9) | 0); build(); });
+
+window.__pzb = {
+  open: open, openDual: openDual, close: close, genFor: genFor, answerOf: answerOf, rng: rng, hashStr: hashStr, PAL: PAL,
+  get calls(){ return state.calls.slice(); },
+  get data(){ return state.data.slice(); },
+  get cleanups(){ return state.cleanups.map(function(f){ return typeof f; }); },
+  set autoClose(v){ state.autoClose = !!v; },
+  redraw: function(){ cvs.forEach(drawCanvas); }
+};
+build();
+requestAnimationFrame(frameLoop);
+})();
+</script>
+</body>
+</html>

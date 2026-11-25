@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>audio-ext offline test</title></head>
+<body>
+<script>
+// Track live intervals so tests can check the music scheduler is cleared.
+(function(){
+  var si = window.setInterval.bind(window), ci = window.clearInterval.bind(window);
+  window.__iv = { live: new Set(), max: 0 };
+  window.setInterval = function(fn, ms){ var id = si(fn, ms); __iv.live.add(id); __iv.max = Math.max(__iv.max, __iv.live.size); return id; };
+  window.clearInterval = function(id){ __iv.live.delete(id); return ci(id); };
+})();
+window.__errors = [];
+window.addEventListener('error', function(e){ __errors.push(String(e.message)); });
+var _ce = console.error.bind(console);
+console.error = function(){ __errors.push(Array.prototype.join.call(arguments, ' ')); _ce.apply(null, arguments); };
+window.TW = { sfxExt: {}, music: {} };
+
+// Same helpers as reference/v0.1.html initAudio/tone/noise, built on any context.
+function makeA(AC){
+  var master = AC.createGain(); master.gain.value = 0.9; master.connect(AC.destination);
+  var echoIn = AC.createGain(), dl = AC.createDelay(1); dl.delayTime.value = 0.3;
+  var fb = AC.createGain(); fb.gain.value = 0.38;
+  var ef = AC.createBiquadFilter(); ef.type = 'lowpass'; ef.frequency.value = 1800;
+  var wet = AC.createGain(); wet.gain.value = 0.5;
+  echoIn.connect(dl); dl.connect(ef); ef.connect(fb); fb.connect(dl); ef.connect(wet); wet.connect(master);
+  var noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate), nd = noiseBuf.getChannelData(0);
+  for (var i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  function env(g, t, a, d, pk){ g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(pk, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); }
+  function tone(f0, f1, dur, type, pk, echo){ var t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur); env(g, t, 0.012, dur, pk); o.connect(g); g.connect(master); if (echo) g.connect(echoIn); o.start(t); o.stop(t + dur + 0.05); }
+  function noise(dur, ft, fq, pk){ var t = AC.currentTime, s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = noiseBuf; f.type = ft; f.frequency.value = fq; env(g, t, 0.008, dur, pk); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dur + 0.05); }
+  return { AC: AC, master: master, echoIn: echoIn, noiseBuf: noiseBuf, tone: tone, noise: noise };
+}
+
+function stats(buf, t0, t1){
+  var d = buf.getChannelData(0), sr = buf.sampleRate;
+  var a = Math.max(0, Math.floor((t0 || 0) * sr)), b = Math.min(d.length, Math.floor((t1 == null ? buf.duration : t1) * sr));
+  var peak = 0, sum = 0, nan = 0, last = -1;
+  for (var i = a; i < b; i++){
+    var x = d[i];
+    if (!isFinite(x)){ nan++; continue; }
+    var ax = Math.abs(x); if (ax > peak) peak = ax; if (ax > 0.001) last = i; sum += x * x;
+  }
+  return { peak: peak, rms: Math.sqrt(sum / Math.max(1, b - a)), nan: nan, audibleUntil: last < 0 ? 0 : last / sr };
+}
+var SR = 44100;
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+async function runSfx(name, vol){
+  var ctx = new OfflineAudioContext(1, 4 * SR, SR), A = makeA(ctx), errs = [], n0 = __errors.length;
+  try { TW.sfxExt[name](A, vol); } catch (e){ errs.push(String(e)); }
+  var buf = await ctx.startRendering();
+  errs = errs.concat(__errors.slice(n0));
+  var s = stats(buf); s.errs = errs; return s;
+}
+
+// plan: [[time, 'start'|'stop', layerName], ...]; driven through suspend() so the
+// setInterval look-ahead scheduler gets real ticks while audio time advances.
+async function runMusic(plan, seconds, windows){
+  var ctx = new OfflineAudioContext(1, seconds * SR, SR), A = makeA(ctx), errs = [], n0 = __errors.length;
+  var STEP = 0.1, maxLive = 0;
+  function act(t){
+    plan.forEach(function(p){
+      if (Math.abs(p[0] - t) < STEP / 2){
+        try { TW.music[p[2]][p[1]](A); } catch (e){ errs.push(String(e)); }
+      }
+    });
+    maxLive = Math.max(maxLive, __iv.live.size);
+  }
+  act(0);
+  for (var k = 1; k * STEP < seconds - 0.05; k++){
+    (function(t){
+      ctx.suspend(t).then(async function(){ act(t); await sleep(105); ctx.resume(); });
+    })(k * STEP);
+  }
+  var buf = await ctx.startRendering();
+  await sleep(250);                       // let the scheduler notice the end / fade-out
+  errs = errs.concat(__errors.slice(n0));
+  var out = { errs: errs, maxLive: maxLive, liveAtEnd: __iv.live.size, all: stats(buf), win: {} };
+  Object.keys(windows || {}).forEach(function(k){ out.win[k] = stats(buf, windows[k][0], windows[k][1]); });
+  var per = []; for (var s = 0; s < seconds; s++) per.push(+stats(buf, s, s + 1).peak.toFixed(4));
+  out.perSecondPeak = per;
+  return out;
+}
+</script>
+<script src="../../js/audio-ext.js"></script>
+</body></html>

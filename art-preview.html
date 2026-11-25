@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Хоёр ертөнц — enemy &amp; environment art preview</title>
+<style>
+  html,body{margin:0;background:#0d0d0f;color:#d9d5cc;font:12px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  header{padding:10px 14px 4px}
+  header h1{font:400 18px Georgia,serif;letter-spacing:.2em;margin:0 0 4px;color:#efe9dc}
+  header p{margin:0;opacity:.65}
+  header a{color:#7fa7e6}
+  #status{margin:6px 0 0;font-family:ui-monospace,Menlo,monospace;opacity:.8}
+  .w{padding:6px 14px 14px}
+  .w h2{font:400 13px Georgia,serif;letter-spacing:.12em;margin:6px 0;opacity:.8}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<header>
+  <h1>ХОЁР ЕРТӨНЦ · art preview</h1>
+  <p>js/art-enemies.js — every enemy state, grass (back + front over a hidden brother), bones, perch.
+     Scale: <a href="?scale=1">×1</a> · <a href="?scale=2">×2</a> · <a href="?scale=3">×3</a> · freeze time: <a href="?t=1.3">?t=1.3</a></p>
+  <div id="status">…</div>
+</header>
+<div class="w"><h2>0 · АМЬД ЕРТӨНЦ (living)</h2><canvas id="c0"></canvas></div>
+<div class="w"><h2>1 · ҮХЭГСДИЙН ЕРТӨНЦ (dead)</h2><canvas id="c1"></canvas></div>
+<script>window.TW = {G:190, H:240, enemyArt:{}, envArt:{}};</script>
+<script src="js/art-enemies.js"></script>
+<script>
+(function(){
+'use strict';
+const Q = new URLSearchParams(location.search);
+const SC = Math.max(0.5, parseFloat(Q.get('scale')) || 3);
+const FREEZE = Q.has('t') ? parseFloat(Q.get('t')) || 0 : null;
+const G = TW.G, H = TW.H;
+const PAL = [
+  {world:0, sil:'#0b0a09', rim:'rgba(160,145,120,0.25)', eye:'#f3efe4', pale:'#c2c7cf', red:'#c8262d', blue:'#467dcd'},
+  {world:1, sil:'#05060a', rim:'rgba(210,218,232,0.35)', eye:'#eef0f3', pale:'#c2c7cf', red:'#c8262d', blue:'#467dcd'}];
+const COL = [
+  {fog:'188,172,140', hill:['#857b66','#5a5346','#302c25']},
+  {fog:'58,66,80',    hill:['#101319','#1d2129','#3a404b']}];
+
+// ---- cells: [label, kind, options]. World units; cw = cell width.
+const ROWS = [
+  {h:64, cells:[
+    {label:'ах (scale ref)', cw:34, ref:true},
+    {label:'wolf · patrol', type:'wolf', state:'patrol', rate:45*0.35},
+    {label:'wolf · sniff',  type:'wolf', state:'sniff'},
+    {label:'wolf · alert',  type:'wolf', state:'alert', loop:1.6},
+    {label:'wolf · chase',  type:'wolf', state:'chase', rate:135*0.16, cw:66},
+    {label:'wolf · howl',   type:'wolf', state:'howl', loop:2.2},
+    {label:'wolf · lost',   type:'wolf', state:'lost', rate:70*0.24},
+    {label:'chase · face −1', type:'wolf', state:'chase', rate:135*0.16, face:-1, cw:66}]},
+  {h:46, cells:[
+    {label:'raven · perch', type:'raven', state:'perch', flip:3},
+    {label:'raven · look',  type:'raven', state:'look', loop:0.3},
+    {label:'raven · alarm', type:'raven', state:'alarm'},
+    {label:'raven · cooldown', type:'raven', state:'cooldown', loop:3},
+    {label:'perch · face −1', type:'raven', state:'perch', face:-1}]},
+  {h:56, cells:[
+    {label:'дүү (scale ref)', cw:34, ref:true},
+    {label:'shulam · idle',   type:'shulam', state:'idle', rate:20*0.45},
+    {label:'shulam · listen', type:'shulam', state:'listen', loop:1.8},
+    {label:'shulam · hunt',   type:'shulam', state:'hunt', rate:90*0.22},
+    {label:'shulam · search', type:'shulam', state:'search'},
+    {label:'shulam · return', type:'shulam', state:'return', rate:35*0.4},
+    {label:'shulam · attack', type:'shulam', state:'attack', loop:1.4},
+    {label:'hunt · face −1',  type:'shulam', state:'hunt', rate:90*0.22, face:-1}]},
+  {h:122, cells:[
+    {label:'grass · hidden ах', env:'grass', cw:96, hero:true},
+    {label:'grass · empty', env:'grass', cw:70},
+    {label:'bones', env:'bones', cw:96},
+    {label:'perch + raven', env:'perch', cw:56}]}
+];
+const CELLW = 62, LABEL = 18, GROUND = 16;
+
+// ---- backdrop pieces copied from the prototype so readability is judged against the real scene
+function hn(x,s){return Math.sin(x*0.0042+s)*0.5+Math.sin(x*0.0113+s*2.1)*0.3+Math.sin(x*0.029+s*3.7)*0.2;}
+function hills(ctx,x0,x1,base,amp,col,seed){ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x0,H+80);
+  for(let sx=x0;sx<=x1+10;sx+=10)ctx.lineTo(sx,base-amp*(0.5+0.5*hn(sx,seed)));ctx.lineTo(x1+10,H+80);ctx.closePath();ctx.fill();}
+function fog(ctx,x,w,col,y0,y1,a){const g=ctx.createLinearGradient(0,y0,0,y1);g.addColorStop(0,`rgba(${col},0)`);g.addColorStop(1,`rgba(${col},${a})`);ctx.fillStyle=g;ctx.fillRect(x,y0,w,y1-y0);}
+function backdrop(ctx,w,x0,x1,top){
+  const g=ctx.createLinearGradient(0,-160,0,200);
+  if(w===0){g.addColorStop(0,'#13110f');g.addColorStop(0.5,'#3d382f');g.addColorStop(0.82,'#8c816b');g.addColorStop(1,'#a3967b');}
+  else{g.addColorStop(0,'#000');g.addColorStop(0.55,'#06070a');g.addColorStop(0.85,'#181c24');g.addColorStop(1,'#252a34');}
+  ctx.fillStyle=g;ctx.fillRect(x0,top,x1-x0,H+80-top);
+  const hc=COL[w].hill,fc=COL[w].fog;
+  hills(ctx,x0,x1,150,55,hc[0],w?4.2:1.3);fog(ctx,x0,x1-x0,fc,105,178,w?0.25:0.3);
+  hills(ctx,x0,x1,166,38,hc[1],w?7.7:2.9);fog(ctx,x0,x1-x0,fc,140,192,w?0.2:0.25);
+  hills(ctx,x0,x1,182,24,hc[2],w?1.9:5.1);
+  fog(ctx,x0,x1-x0,fc,150,195,w?0.18:0.22);
+}
+function ground(ctx,w,x0,x1){
+  if(w===0){ctx.fillStyle='#0b0a09';ctx.fillRect(x0,G,x1-x0,H+80-G);}
+  else{ctx.fillStyle='#c2c7cf';ctx.fillRect(x0,G,x1-x0,H+80-G);
+    const g=ctx.createLinearGradient(0,G,0,H+20);g.addColorStop(0,'rgba(8,10,14,0)');g.addColorStop(1,'rgba(8,10,14,0.55)');ctx.fillStyle=g;ctx.fillRect(x0,G,x1-x0,H+80-G);
+    ctx.fillStyle='#e2e5ea';ctx.fillRect(x0,G,x1-x0,1);}
+  ctx.strokeStyle=w?'#d3d7de':'#0b0a09';ctx.lineWidth=w?0.7:0.9;ctx.beginPath();
+  for(let x=x0+2;x<x1;x+=4.3+Math.abs(Math.sin(x*3.7))*3){const h=1.5+Math.abs(Math.sin(x*1.3))*(w?4:6);ctx.moveTo(x,G+0.5);ctx.lineTo(x+Math.sin(x)*1.5,G-h);}ctx.stroke();
+}
+
+// ---- characters (prototype drawBrother / drawSister, standing still) for scale checks
+function drawBrother(ctx,c,col){
+  ctx.save();ctx.translate(c.x+c.w/2,c.y+c.h);ctx.scale(c.face,1);
+  ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineCap='round';ctx.lineJoin='round';
+  if(c.hidden){ctx.translate(0,3);ctx.scale(1,0.9);}
+  ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-1,-9);ctx.lineTo(-1,-4.5);ctx.lineTo(-1,0);ctx.moveTo(1,-9);ctx.lineTo(1,-4.5);ctx.lineTo(1,0);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-4.6,-9);ctx.lineTo(-4.2,-20);ctx.quadraticCurveTo(0,-23.5,4.2,-20);ctx.lineTo(4.6,-9);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.arc(0.6,-25.8,5.6,0,7);ctx.fill();
+  ctx.beginPath();ctx.moveTo(-4.5,-27);ctx.lineTo(-8,-29.5);ctx.lineTo(-4,-30);ctx.lineTo(-6,-33);ctx.lineTo(-0.5,-31.6);ctx.lineTo(1,-32.5);ctx.lineTo(2.5,-31);ctx.closePath();ctx.fill();
+  ctx.lineWidth=2.3;ctx.beginPath();ctx.moveTo(0.5,-19);ctx.lineTo(0,-14.5);ctx.lineTo(0,-11);ctx.stroke();
+  ctx.fillStyle=c.hidden?'rgba(243,239,228,0.55)':'#f3efe4';ctx.beginPath();ctx.arc(2.9,-26.4,1.15,0,7);ctx.arc(5.2,-26.3,0.95,0,7);ctx.fill();
+  ctx.restore();
+}
+function drawSister(ctx,c,t){
+  ctx.save();ctx.translate(c.x+c.w/2,c.y+c.h);ctx.scale(c.face,1);
+  ctx.fillStyle='#eef0f3';ctx.strokeStyle='#eef0f3';ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.shadowColor='rgba(235,240,255,0.55)';ctx.shadowBlur=7*SC;
+  ctx.lineWidth=2.3;ctx.beginPath();ctx.moveTo(-1.3,-6);ctx.lineTo(-1.3,0);ctx.moveTo(1.3,-6);ctx.lineTo(1.3,0);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-2.6,-15.5);ctx.lineTo(-6.2,-5.5);ctx.quadraticCurveTo(0,-4.2,6.2,-5.5);ctx.lineTo(2.6,-15.5);ctx.quadraticCurveTo(0,-17.2,-2.6,-15.5);ctx.fill();
+  ctx.beginPath();ctx.arc(0.5,-19.6,4.9,0,7);ctx.fill();
+  const sw=Math.sin(t*3)*0.6;
+  ctx.beginPath();ctx.moveTo(-3.2,-22);ctx.quadraticCurveTo(-8,-21.5+sw,-7.5,-16.5+sw);ctx.quadraticCurveTo(-5.5,-19,-3,-19.5);ctx.fill();
+  ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0.3,-14);ctx.lineTo(0,-10.5);ctx.lineTo(0,-8);ctx.stroke();ctx.shadowBlur=0;
+  ctx.fillStyle='#c8262d';ctx.beginPath();ctx.moveTo(-3.6,-22.6);ctx.lineTo(-6.2,-25.2);ctx.lineTo(-6.6,-21.8);ctx.closePath();ctx.moveTo(-3.6,-22.6);ctx.lineTo(-1.6,-25.6);ctx.lineTo(-0.6,-23);ctx.closePath();ctx.fill();
+  const fl=t*7;ctx.strokeStyle='#c8262d';ctx.lineWidth=1.3;ctx.beginPath();
+  ctx.moveTo(-3.6,-22.6);ctx.quadraticCurveTo(-7,-21+Math.sin(fl)*1.4,-10,-20.5+Math.sin(fl+1.3)*2);
+  ctx.moveTo(-3.6,-22.6);ctx.quadraticCurveTo(-6.5,-19.5+Math.sin(fl+0.7)*1.2,-8.5,-17.5+Math.sin(fl+2)*1.6);ctx.stroke();
+  ctx.fillStyle='#0c0d10';ctx.beginPath();ctx.arc(2.6,-20.1,0.95,0,7);ctx.arc(4.5,-20.1,0.85,0,7);ctx.fill();
+  ctx.restore();
+}
+const SIZE = {wolf:[34,20], raven:[14,10], shulam:[30,16]};
+function enemy(cell, X, cw, t, baseY){
+  const [w,h] = SIZE[cell.type];
+  let face = cell.face || 1;
+  if(cell.flip) face *= (Math.floor(t/cell.flip)%2 ? -1 : 1);
+  const et = cell.loop ? (t % cell.loop) : t % 10;
+  return {id:cell.label, type:cell.type, x:X+cw/2-w/2, y:(baseY==null?G:baseY)-h, w, h, face, state:cell.state, t:et, anim:t*(cell.rate||0)};
+}
+
+function rowWidth(r){return r.cells.reduce((s,c)=>s+(c.cw||CELLW),0);}
+const WMAX = Math.max(...ROWS.map(rowWidth));
+const cvs = [document.getElementById('c0'), document.getElementById('c1')];
+const DPR = Math.min(2, window.devicePixelRatio||1);
+const totalH = ROWS.reduce((s,r)=>s+r.h*SC+LABEL,0);
+for(const c of cvs){c.width=Math.round(WMAX*SC*DPR);c.height=Math.round(totalH*DPR);c.style.width=WMAX*SC+'px';c.style.height=totalH+'px';}
+
+function drawWorld(w, t){
+  const cv=cvs[w], ctx=cv.getContext('2d'), P=PAL[w];
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
+  let y0 = 0;
+  for(const row of ROWS){
+    // label strip
+    ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#000';ctx.fillRect(0,y0,WMAX*SC,LABEL);
+    let lx=0;ctx.font=(SC<2?8:11)+'px system-ui,sans-serif';ctx.textBaseline='middle';
+    for(const cell of row.cells){const cw=cell.cw||CELLW,txt=SC<2?(cell.label.split(' · ')[1]||cell.label.split(' ')[0]):cell.label;
+      ctx.fillStyle='rgba(235,230,220,0.75)';ctx.fillText(txt,lx*SC+3,y0+LABEL/2,cw*SC-5);
+      ctx.fillStyle='rgba(255,255,255,0.12)';ctx.fillRect(lx*SC,y0,1,LABEL);lx+=cw;}
+    y0 += LABEL;
+    // world strip: world y [G-(h-GROUND), G+GROUND] -> screen [y0, y0+h*SC]
+    const top = G-(row.h-GROUND), X0 = 1000;
+    ctx.save();ctx.beginPath();ctx.rect(0,y0,WMAX*SC,row.h*SC);ctx.clip();
+    ctx.setTransform(DPR*SC,0,0,DPR*SC,-X0*SC*DPR,(y0-top*SC)*DPR);
+    backdrop(ctx,w,X0,X0+WMAX,top);
+    ground(ctx,w,X0,X0+WMAX);
+    let X = X0;
+    for(const cell of row.cells){
+      const cw = cell.cw||CELLW;
+      if(cell.ref){ if(w===0) drawBrother(ctx,{x:X+cw/2-7,y:G-30,w:14,h:30,face:1},'#0a0908'); else drawSister(ctx,{x:X+cw/2-6,y:G-24,w:12,h:24,face:1},t); }
+      else if(cell.type){
+        if(cell.type==='raven'){ const py=G-(row.h-GROUND)+16; TW.envArt.perch(ctx,X+cw/2-2,py,P); TW.enemyArt.raven(ctx,enemy(cell,X-2,cw,t,py),t,P); }
+        else TW.enemyArt[cell.type](ctx,enemy(cell,X,cw,t),t,P);
+      } else if(cell.env==='grass'){
+        const z={x0:X+12,x1:X+cw-12};
+        TW.envArt.grass(ctx,z,t,false,P);
+        if(cell.hero){ if(w===0) drawBrother(ctx,{x:X+cw/2-7,y:G-30,w:14,h:30,face:1,hidden:true},'#0a0908'); else drawSister(ctx,{x:X+cw/2-6,y:G-24,w:12,h:24,face:1},t); }
+        TW.envArt.grass(ctx,z,t,true,P);
+      } else if(cell.env==='bones'){
+        TW.envArt.bones(ctx,{x0:X+8,x1:X+cw-8},t,P);
+        if(w===1) drawSister(ctx,{x:X+cw-20,y:G-24,w:12,h:24,face:-1},t);
+      } else if(cell.env==='perch'){
+        const px=X+cw/2-4, py=G-95;
+        TW.envArt.perch(ctx,px,py,P);
+        TW.enemyArt.raven(ctx,{id:'R1',x:px-7,y:py-10,w:14,h:10,face:Math.floor(t/3)%2?-1:1,state:'perch',t:t%3,anim:0},t,P);
+      }
+      X += cw;
+    }
+    ctx.restore();
+    y0 += row.h*SC;
+  }
+}
+
+// ---- robustness: call everything with junk / missing fields; verify nothing throws and ctx state is restored
+function robustness(){
+  const c=document.createElement('canvas');c.width=c.height=64;const ctx=c.getContext('2d');
+  const before=JSON.stringify([ctx.getTransform().toString(),ctx.globalAlpha,ctx.lineWidth,ctx.fillStyle,ctx.strokeStyle,ctx.lineCap,ctx.lineJoin,ctx.globalCompositeOperation]);
+  const junkE=[undefined,null,{},{state:'??'},{x:NaN,y:'a',w:null,anim:Infinity,face:0,state:5},{x:10,y:170,w:34,h:20,state:'chase'}];
+  const junkP=[undefined,null,{},{world:1},{world:0,sil:5}];
+  let calls=0;const errs=[];const ow=console.warn;console.warn=function(m){errs.push(String(m));ow.apply(console,arguments);};
+  try{
+    for(const k of ['wolf','raven','shulam'])for(const e of junkE)for(const p of junkP){TW.enemyArt[k](ctx,e,undefined,p);TW.enemyArt[k](ctx,e,1.7,p);calls+=2;}
+    for(const p of junkP){for(const z of [undefined,null,{},{x0:50,x1:10},{x0:'a'}]){TW.envArt.grass(ctx,z,undefined,undefined,p);TW.envArt.grass(ctx,z,2,true,p);TW.envArt.bones(ctx,z,undefined,p);calls+=3;}
+      TW.envArt.perch(ctx,undefined,undefined,p);TW.envArt.perch(ctx,5,200,p);calls+=2;}
+    TW.enemyArt.wolf(null);TW.envArt.grass(undefined);calls+=2;
+  }catch(e){errs.push('THROW '+e.message);}
+  console.warn=ow;
+  const after=JSON.stringify([ctx.getTransform().toString(),ctx.globalAlpha,ctx.lineWidth,ctx.fillStyle,ctx.strokeStyle,ctx.lineCap,ctx.lineJoin,ctx.globalCompositeOperation]);
+  const ok=!errs.length&&before===after;
+  return {ok,calls,errs,stateRestored:before===after};
+}
+const R = robustness();
+const st = document.getElementById('status');
+st.textContent = `scale ×${SC} · robustness: ${R.ok?'OK':'FAIL'} (${R.calls} junk calls, ctx state ${R.stateRestored?'restored':'LEAKED'}${R.errs.length?', '+R.errs.join(' | '):''})`;
+console.log('[art-preview] robustness', JSON.stringify(R));
+window.__art = {robustness:R, draw:t=>{drawWorld(0,t);drawWorld(1,t);}};
+
+function frameLoop(now){
+  const t = FREEZE!=null ? FREEZE : now/1000;
+  drawWorld(0,t);drawWorld(1,t);
+  if(FREEZE==null) requestAnimationFrame(frameLoop);
+}
+requestAnimationFrame(frameLoop);
+})();
+</script>
+</body>
+</html>

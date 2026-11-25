@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Хоёр ертөнц — AI sandbox</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+canvas{position:fixed;left:0;top:0;display:block}
+#probe{position:fixed;bottom:0;left:0;height:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none}
+#controls{position:fixed;left:0;right:0;bottom:0;display:none;pointer-events:none;z-index:4}
+.ctl{position:absolute;pointer-events:auto}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="probe"></div>
+<div id="controls">
+  <div class="ctl" id="pad"><span id="pl">◀</span><span id="pr">▶</span></div>
+  <div class="ctl" id="bSwitch" data-k="switch" aria-label="Дүр солих">⇅</div>
+  <div class="ctl" id="bAction" data-k="action" aria-label="Татах, дуудах">◎</div>
+  <div class="ctl" id="bJump" data-k="jump" aria-label="Үсрэх">▲</div>
+</div>
+<script src="../../js/tw.js"></script>
+<script src="../../js/enemies.js"></script>
+<script src="../../js/levels/ch1.js"></script>
+<script src="sandbox.js"></script>
+<script src="../../js/game.js"></script>
+</body>
+</html>
